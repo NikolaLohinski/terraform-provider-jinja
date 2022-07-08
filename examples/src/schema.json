@@ -1,0 +1,16 @@
+{
+    "type": "object",
+    "required": [
+        "recipe"
+    ],
+    "properties": {
+        "recipe": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "maxItems": 5
+        }
+    }
+}

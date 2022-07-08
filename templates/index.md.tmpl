@@ -1,0 +1,20 @@
+---
+page_title: "Jinja provider"
+subcategory: ""
+description: |-
+ The Jinja provider is used render Jinja templates within terraform context. 
+---
+
+# Jinja provider
+
+The "jinja" provider allows the use of [Jinja](https://jinja.palletsprojects.com) templating within Terraform configurations. This is a *logical provider*, which means that it works entirely within Terraform's logic, and doesn't interact with any other services.
+
+The Jinja engine used under the hood is based on [the `gonja` Golang library](https://github.com/noirbizarre/gonja) and aims to be "mostly" compliant with the Jinja API.
+
+The JSON schema validation engine is based on [the `jsonschema` Golang library](https://github.com/santhosh-tekuri/jsonschema).
+
+## Example
+
+{{ tffile "examples/provider.tf" }}
+
+{{ .SchemaMarkdown | trimspace }}

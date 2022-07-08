@@ -1,0 +1,16 @@
+---
+page_title: "{{.Name}} {{.Type}} - {{.ProviderName}}"
+subcategory: ""
+description: |-
+{{ .Description | plainmarkdown | trimspace | prefixlines "  " }}
+---
+
+# jinja_template (Data Source)
+
+{{ .Description | plainmarkdown | trimspace | prefixlines "\n" }}
+
+## Example
+
+{{ tffile "examples/template.tf" }}
+
+{{ .SchemaMarkdown | trimspace }}

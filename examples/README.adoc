@@ -1,0 +1,32 @@
+:current-folder: examples/0-documentation
+:get-terraform-url: https://terraform.io
+
+= Example for documentation
+
+== Introduction
+
+This example is a very basic one meant for online documentation.
+
+== How to run this example
+
+- Install terraform following the link:{get-terraform-url}[official documentation] ;
+- Then `cd` into this folder:
++
+[source,shell,subs="attributes"]
+----
+cd {current-folder}
+----
+
+- Initialize terraform:
++
+[source,shell]
+----
+terraform init
+----
+
+- Apply terraform (and approve the plan when prompted for confirmation):
++
+[source,shell]
+----
+terraform apply
+----

@@ -1,0 +1,13 @@
+linters:
+  enable:
+    - durationcheck
+    - exportloopref
+    - godot
+    - gofmt
+    - makezero
+    - misspell
+    - predeclared
+    - tenv
+    - unconvert
+  disable:
+    - structcheck
