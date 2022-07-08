@@ -1,5 +1,5 @@
 :project-url: https://github:com/nikolalohinski/terraform-provider-jinja
-:logo-url: // TODO
+:logo-url: misc/logo.png
 :examples-folder: examples
 :docs-folder: docs
 :templates-folder: templates
@@ -29,7 +29,7 @@ make lint
 ----
 ====
 
-To build and install to provider locally; use:
+To build and install the provider locally, use:
 
 [source,shell]
 ----
