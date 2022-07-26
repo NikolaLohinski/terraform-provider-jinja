@@ -27,6 +27,8 @@ var default_delimiters = map[string]interface{}{
 	"comment_end":    "#}",
 }
 
+var context_types = []string{"yaml", "json"}
+
 func delimitersSchema() *schema.Schema {
 	return &schema.Schema{
 		Type:        schema.TypeList,
@@ -99,8 +101,8 @@ func dataSourceJinjaTemplate() *schema.Resource {
 						"type": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: validation.StringInSlice([]string{"yaml", "json"}, true),
-							Description:  "Type of parsing to perform on the given string or file",
+							ValidateFunc: validation.StringInSlice(context_types, true),
+							Description:  fmt.Sprintf("Type of parsing (one of: %s) to perform on the given string or file", strings.Join(context_types, ", ")),
 						},
 						"data": {
 							Type:        schema.TypeString,
