@@ -1,4 +1,4 @@
-:current-folder: examples/0-documentation
+:current-folder: examples/
 :get-terraform-url: https://terraform.io
 
 = Example for documentation
