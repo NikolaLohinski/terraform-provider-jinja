@@ -1,6 +1,6 @@
 provider "jinja" {
   delimiters {
-    // The following values are the defaults
+    // The values below are the defaults
     variable_start = "{{"
     variable_end   = "}}"
     block_start    = "{%"

@@ -13,13 +13,16 @@ The jinja_template data source renders a jinja template with a given template wi
 ## Example
 
 ```terraform
-data "jinja_template" "example" {
+data "jinja_template" "render" {
+  // must be a path to resolve any nested templates includes
   template = "${path.module}/src/template.j2"
   context {
+    // either yaml or json
     type = "yaml"
-    // data can be either a path or inline
+    // can be either a path or inline
     data = "${path.module}/src/context.yaml"
   }
+  // can be either a path or inline
   schema = "${path.module}/src/schema.json"
 }
 ```
@@ -48,7 +51,7 @@ data "jinja_template" "example" {
 Required:
 
 - `data` (String) Either a string holding the serialized context or path to a file
-- `type` (String) Type of parsing to perform on the given string or file
+- `type` (String) Type of parsing (one of: yaml, json) to perform on the given string or file
 
 
 <a id="nestedblock--delimiters"></a>

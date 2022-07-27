@@ -1,3 +1,3 @@
-output "example" {
-  value = data.jinja_template.example.result
+output "result" {
+  value = data.jinja_template.render.result
 }
