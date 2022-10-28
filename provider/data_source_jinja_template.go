@@ -127,6 +127,10 @@ func render(d *schema.ResourceData, meta interface{}) error {
 		return fmt.Errorf("failed to apply delimiters: %s", err)
 	}
 
+	if err := applyFilters(d, meta); err != nil {
+		return fmt.Errorf("failed to apply filters: %s", err)
+	}
+
 	template, err := parse_template(d)
 	if err != nil {
 		return fmt.Errorf("failed to parse template: %s", err)
@@ -271,5 +275,10 @@ func applyDelimiters(d *schema.ResourceData, meta interface{}) error {
 	gonja.DefaultEnv.Config.CommentStartString = delimiters["comment_start"].(string)
 	gonja.DefaultEnv.Config.CommentEndString = delimiters["comment_end"].(string)
 
+	return nil
+}
+
+func applyFilters(d *schema.ResourceData, meta interface{}) error {
+	gonja.DefaultEnv.Filters.Update(Filters)
 	return nil
 }
