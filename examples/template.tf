@@ -9,4 +9,9 @@ data "jinja_template" "render" {
   }
   // can be either a path or inline
   schema = "${path.module}/src/schema.json"
+
+  header = "some macro for example"
+  footer = <<-EOF
+    some value
+  EOF
 }

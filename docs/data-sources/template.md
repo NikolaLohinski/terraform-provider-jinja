@@ -24,6 +24,11 @@ data "jinja_template" "render" {
   }
   // can be either a path or inline
   schema = "${path.module}/src/schema.json"
+
+  header = "some macro for example"
+  footer = <<-EOF
+    some value
+  EOF
 }
 ```
 
@@ -38,6 +43,8 @@ data "jinja_template" "render" {
 
 - `context` (Block List, Max: 1) Context to use while rendering the template (see [below for nested schema](#nestedblock--context))
 - `delimiters` (Block List, Max: 1) Custom delimiters for the jinja engine (see [below for nested schema](#nestedblock--delimiters))
+- `footer` (String) Footer to add at the bottom of the template before rendering
+- `header` (String) Header to add at the top of the template before rendering
 - `schema` (String) Either inline or a path to a JSON schema to validate the context
 
 ### Read-Only

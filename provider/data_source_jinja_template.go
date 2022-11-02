@@ -83,6 +83,16 @@ func dataSourceJinjaTemplate() *schema.Resource {
 		Read:        render,
 		Description: "The jinja_template data source renders a jinja template with a given template with possible JSON schema validation of the context",
 		Schema: map[string]*schema.Schema{
+			"header": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Header to add at the top of the template before rendering",
+			},
+			"footer": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Footer to add at the bottom of the template before rendering",
+			},
 			"template": {
 				Type:        schema.TypeString,
 				Required:    true,
@@ -163,11 +173,26 @@ func render(d *schema.ResourceData, meta interface{}) error {
 
 func parseTemplate(d *schema.ResourceData, environment *gonja.Environment) (*exec.Template, error) {
 	template := d.Get("template").(string)
-	tpl, err := environment.FromFile(path.Base(template))
+
+	file, err := environment.Loader.Get(path.Base(template))
+	if err != nil {
+		return nil, fmt.Errorf("error loading file: %s", err)
+	}
+
+	buffer, err := ioutil.ReadAll(file)
 	if err != nil {
 		return nil, fmt.Errorf("error reading template: %s", err)
 	}
-	return tpl, nil
+
+	bundle := string(buffer)
+	if header := d.Get("header").(string); header != "" {
+		bundle = header + "\n" + bundle
+	}
+	if footer := d.Get("footer").(string); footer != "" {
+		bundle = bundle + "\n" + footer
+	}
+
+	return exec.NewTemplate(template, bundle, environment.EvalConfig)
 }
 
 func parseContext(d *schema.ResourceData) (map[string]interface{}, error) {
