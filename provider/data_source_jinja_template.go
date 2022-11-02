@@ -13,7 +13,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	json "github.com/json-iterator/go"
 	"github.com/noirbizarre/gonja"
+	"github.com/noirbizarre/gonja/config"
 	"github.com/noirbizarre/gonja/exec"
+	"github.com/noirbizarre/gonja/loaders"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 	"gopkg.in/yaml.v2"
 )
@@ -123,25 +125,22 @@ func dataSourceJinjaTemplate() *schema.Resource {
 }
 
 func render(d *schema.ResourceData, meta interface{}) error {
-	if err := applyDelimiters(d, meta); err != nil {
-		return fmt.Errorf("failed to apply delimiters: %s", err)
+	environment, err := getRenderingEnvironment(d, meta)
+	if err != nil {
+		return fmt.Errorf("failed to build jinja environment: %s", err)
 	}
 
-	if err := applyFilters(d, meta); err != nil {
-		return fmt.Errorf("failed to apply filters: %s", err)
-	}
-
-	template, err := parse_template(d)
+	template, err := parseTemplate(d, environment)
 	if err != nil {
 		return fmt.Errorf("failed to parse template: %s", err)
 	}
 
-	context, err := parse_context(d)
+	context, err := parseContext(d)
 	if err != nil {
 		return fmt.Errorf("failed to parse context: %s", err)
 	}
 
-	if err := validate_schema(d, context); err != nil {
+	if err := validateSchema(d, context); err != nil {
 		return fmt.Errorf("failed to validate context against schema: %s", err)
 	}
 
@@ -162,21 +161,16 @@ func render(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func parse_template(d *schema.ResourceData) (*exec.Template, error) {
+func parseTemplate(d *schema.ResourceData, environment *gonja.Environment) (*exec.Template, error) {
 	template := d.Get("template").(string)
-	if err := gonja.DefaultLoader.SetBaseDir(path.Dir(template)); err != nil {
-		return nil, fmt.Errorf("failed to set base directory to template folder: %s", err)
-	}
-
-	tpl, err := gonja.FromFile(path.Base(template))
+	tpl, err := environment.FromFile(path.Base(template))
 	if err != nil {
 		return nil, fmt.Errorf("error reading template: %s", err)
 	}
-
 	return tpl, nil
 }
 
-func parse_context(d *schema.ResourceData) (map[string]interface{}, error) {
+func parseContext(d *schema.ResourceData) (map[string]interface{}, error) {
 	context := make(map[string]interface{})
 
 	context_blocks, ok := d.GetOk("context")
@@ -216,7 +210,7 @@ func parse_context(d *schema.ResourceData) (map[string]interface{}, error) {
 	return context, nil
 }
 
-func validate_schema(d *schema.ResourceData, context map[string]interface{}) error {
+func validateSchema(d *schema.ResourceData, context map[string]interface{}) error {
 	schemaField, ok := d.GetOk("schema")
 
 	if ok {
@@ -250,7 +244,7 @@ func validate_schema(d *schema.ResourceData, context map[string]interface{}) err
 	return nil
 }
 
-func applyDelimiters(d *schema.ResourceData, meta interface{}) error {
+func getRenderingEnvironment(d *schema.ResourceData, meta interface{}) (*gonja.Environment, error) {
 	var delimiters map[string]interface{}
 
 	provider_delimiters := meta.(map[string]interface{})
@@ -268,17 +262,27 @@ func applyDelimiters(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 
-	gonja.DefaultEnv.Config.BlockStartString = delimiters["block_start"].(string)
-	gonja.DefaultEnv.Config.BlockEndString = delimiters["block_end"].(string)
-	gonja.DefaultEnv.Config.VariableStartString = delimiters["variable_start"].(string)
-	gonja.DefaultEnv.Config.VariableEndString = delimiters["variable_end"].(string)
-	gonja.DefaultEnv.Config.CommentStartString = delimiters["comment_start"].(string)
-	gonja.DefaultEnv.Config.CommentEndString = delimiters["comment_end"].(string)
+	config := config.DefaultConfig
+	config.BlockStartString = delimiters["block_start"].(string)
+	config.BlockEndString = delimiters["block_end"].(string)
+	config.VariableStartString = delimiters["variable_start"].(string)
+	config.VariableEndString = delimiters["variable_end"].(string)
+	config.CommentStartString = delimiters["comment_start"].(string)
+	config.CommentEndString = delimiters["comment_end"].(string)
 
-	return nil
-}
+	template := d.Get("template").(string)
+	loader, err := loaders.NewFileSystemLoader(path.Dir(template))
+	if err != nil {
+		return nil, fmt.Errorf("failed get a file system loader: %v", err)
+	}
 
-func applyFilters(d *schema.ResourceData, meta interface{}) error {
-	gonja.DefaultEnv.Filters.Update(Filters)
-	return nil
+	environment := gonja.NewEnvironment(config, loader)
+
+	for name, filter := range Filters {
+		if err := environment.Filters.Register(name, filter); err != nil {
+			return nil, fmt.Errorf("failed register filter %s: %s", name, err)
+		}
+	}
+
+	return environment, nil
 }
