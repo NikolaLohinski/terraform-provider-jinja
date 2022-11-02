@@ -7,9 +7,19 @@ description: |-
 
 # Jinja provider
 
-The "jinja" provider allows the use of [Jinja](https://jinja.palletsprojects.com) templating within Terraform configurations. This is a *logical provider*, which means that it works entirely within Terraform's logic, and doesn't interact with any other services.
+The "jinja" provider makes it possible to use [Jinja](https://jinja.palletsprojects.com) templating within Terraform context. This is a *logical provider*, which means that it works entirely within Terraform's logic, and doesn't interact with any other services.
 
-The Jinja engine used under the hood is based on [the `gonja` Golang library](https://github.com/noirbizarre/gonja) and aims to be "mostly" compliant with the Jinja API.
+The Jinja engine used under the hood is based on [the `gonja` Golang library](https://github.com/noirbizarre/gonja) and aims to be "mostly" compliant with the Jinja API. Moreover, the following additional features have been added on top of `gonja` for ease of use:
+* A new filter called `ifelse` to allow for ternary conditions as follows:
+  ```
+  true is {{ "foo" in "foo bar" | ifelse("yes", "no") }}
+  false is {{ "yolo" in "foo bar" | ifelse("yes", "no") }}
+  ```
+  Which will render into:
+  ```
+  true is yes
+  false is no
+  ```
 
 The JSON schema validation engine is based on [the `jsonschema` Golang library](https://github.com/santhosh-tekuri/jsonschema).
 
