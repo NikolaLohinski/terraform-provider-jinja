@@ -220,15 +220,21 @@ func parseContext(d *schema.ResourceData) (map[string]interface{}, error) {
 
 		switch strings.ToLower(kind.(string)) {
 		case "json":
-			if err := json.Unmarshal([]byte(data.(string)), &context); err != nil {
-				return nil, fmt.Errorf("failed to JSON unmarshal context: %v", data)
-			}
+			// nothing to do because context will be unmarshalled as JSON later on
 		case "yaml":
 			if err := yaml.Unmarshal([]byte(data.(string)), &context); err != nil {
-				return nil, fmt.Errorf("failed to YAML unmarshal context: %v", data)
+				return nil, fmt.Errorf("failed to unmarshal YAML context: %v", data)
 			}
+			marshalled, err := json.Marshal(context)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal YAML context back to JSON: %v", data)
+			}
+			data = string(marshalled)
 		default:
 			return nil, fmt.Errorf("provided context has an unsupported type: %v", kind)
+		}
+		if err := json.Unmarshal([]byte(data.(string)), &context); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal context: %v", data)
 		}
 	}
 
