@@ -5,6 +5,7 @@
 :templates-folder: templates
 :go-install-url: https://go.dev/doc/install
 :golangci-lint-url: https://golangci-lint.run/usage/install/#local-installation
+:tfplugindocs-url: https://github.com/hashicorp/terraform-plugin-docs
 :make-url: https://www.gnu.org/software/make/
 
 [.text-center,.big]
@@ -50,9 +51,9 @@ You can then run the example from the `{examples-folder}/` sub-folders:
 
 [NOTE]
 ====
-The `{docs-folder}/` folder is generated using link:https://github.com/hashicorp/terraform-plugin-docs[`tfplugindocs`] with the `{templates-folder}/` folder. To regenerate it:
+The `{docs-folder}/` folder is generated using link:{tfplugindocs-url}[`tfplugindocs`] with the `{templates-folder}/` folder. To regenerate it:
 
-* Install `tfplugindocs` by following the link:https://github.com/hashicorp/terraform-plugin-docs#installation[official documentation]
+* Install `tfplugindocs` by following the link:{tfplugindocs-url}#installation[official documentation]
 * Run it as follows:
 +
 [source,shell]
