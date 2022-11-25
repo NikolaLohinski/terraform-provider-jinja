@@ -594,3 +594,84 @@ func TestJinjaTemplateWithHeaderMacro(t *testing.T) {
 		},
 	})
 }
+
+func TestNativeForLoop(t *testing.T) {
+	// Skip until native gonja loop is fixed
+	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
+	{%- for key, value in dictionary %}
+	{{ key }} = {{ value }}
+	{%- endfor %}
+
+	`))
+	defer remove()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProviderFactories: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: heredoc.Doc(`
+				data "jinja_template" "render" {
+					template = "` + path.Join(dir, template) + `"
+					context {
+						type = "yaml"
+						data = <<-EOF
+						dictionary:
+						  foo: bar
+						  tic: toc
+						EOF
+					}
+				}`),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
+					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
+						expected := heredoc.Doc(`
+
+						foo = bar
+						tic = toc
+						`)
+						if expected != got {
+							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+						}
+						return nil
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestJinjaTemplateWithIntegerInYAMLContext(t *testing.T) {
+	template, _, dir, remove_template := mustCreateFile(t.Name(), heredoc.Doc(`
+	The int field is: {{ integer }}
+	`))
+	defer remove_template()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProviderFactories: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: heredoc.Doc(`
+				data "jinja_template" "render" {
+					template = "` + path.Join(dir, template) + `"
+					context {
+						type = "yaml"
+						data = yamlencode({
+							integer = 123
+						})
+					}
+				}`),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
+					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
+						expected := heredoc.Doc(`
+						The int field is: 123`)
+						if expected != got {
+							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+						}
+						return nil
+					}),
+				),
+			},
+		},
+	})
+}
