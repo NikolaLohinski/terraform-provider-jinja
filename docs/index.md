@@ -20,6 +20,20 @@ The Jinja engine used under the hood is based on [the `gonja` Golang library](ht
   true is yes
   false is no
   ```
+* A new filter called `get` to be able to get an item in a map with a dynamic key:
+  ```
+  {% set tac = "key" %}
+  {{ tic | get(tac) }}
+  ```
+  With the following YAML context:
+  ```
+  tic:
+    key: toe
+  ```
+  Will render into:
+  ```
+  toe
+  ```
 
 The JSON schema validation engine is based on [the `jsonschema` Golang library](https://github.com/santhosh-tekuri/jsonschema).
 

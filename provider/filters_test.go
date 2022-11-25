@@ -42,3 +42,41 @@ func TestFilterIfElse(t *testing.T) {
 		},
 	})
 }
+
+func TestFilterGet(t *testing.T) {
+	// Skip until native gonja loop is fixed
+	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
+	{%- set key = "field" -%}
+	{{- dictionary | get(key) -}}
+	`))
+	defer remove()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProviderFactories: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: heredoc.Doc(`
+				data "jinja_template" "render" {
+					template = "` + path.Join(dir, template) + `"
+					context {
+						type = "yaml"
+						data = <<-EOF
+						dictionary:
+						  field: content
+						EOF
+					}
+				}`),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
+					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
+						expected := "content"
+						if expected != got {
+							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+						}
+						return nil
+					}),
+				),
+			},
+		},
+	})
+}

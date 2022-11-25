@@ -1,19 +1,13 @@
 package jinja
 
 import (
-	"math/rand"
-	"time"
-
 	"github.com/noirbizarre/gonja/exec"
 	"github.com/pkg/errors"
 )
 
 var Filters = exec.FilterSet{
 	"ifelse": filterIfElse,
-}
-
-func init() {
-	rand.Seed(time.Now().UTC().UnixNano())
+	"get":    filterGet,
 }
 
 func filterIfElse(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
@@ -33,4 +27,14 @@ func filterIfElse(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 	} else {
 		return exec.AsValue(falseValue)
 	}
+}
+
+func filterGet(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	p := params.ExpectArgs(1)
+	if p.IsError() {
+		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'attr'"))
+	}
+	item := p.First().String()
+	value, _ := in.Getitem(item)
+	return value
 }
