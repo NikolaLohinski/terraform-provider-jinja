@@ -60,3 +60,45 @@ Will render into:
 ```
 toe
 ```
+
+### The `values` filter
+
+The `values` filter is meant to get the values of a map as a list:
+
+```
+{{"{{"}} numbers | values | sort | join(" > ") {{"}}"}}
+```
+With the following YAML context:
+```
+numbers:
+  first: 1
+  second: 2
+  third: 3
+```
+Will render into:
+```
+1 > 2 > 3
+```
+
+Note that the order of values is not guaranteed as there is no ordering in Golang maps.
+
+### The `keys` filter
+
+The `keys` filter is meant to get the keys of a map as a list:
+
+```
+{{"{{"}} letters | keys | sort | join(" > ") {{"}}"}}
+```
+With the following YAML context:
+```
+letters:
+  a: hey
+  b: bee
+  c: see
+```
+Will render into:
+```
+a > b > c
+```
+
+Note that the order of keys is not guaranteed as there is no ordering in Golang maps.
