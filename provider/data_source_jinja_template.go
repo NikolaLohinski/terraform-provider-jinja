@@ -9,6 +9,7 @@ import (
 	"path"
 	"strings"
 
+	humanize "github.com/dustin/go-humanize"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	json "github.com/json-iterator/go"
@@ -260,7 +261,8 @@ func validateSchema(d *schema.ResourceData, context map[string]interface{}) erro
 		schemas = castSchemasField
 	}
 
-	for _, schemaField := range schemas {
+	schemaErrors := []string{}
+	for index, schemaField := range schemas {
 		schema := schemaField.(string)
 		if _, err := os.Stat(schema); err == nil {
 			content, err := ioutil.ReadFile(schema)
@@ -269,6 +271,7 @@ func validateSchema(d *schema.ResourceData, context map[string]interface{}) erro
 			}
 			schema = string(content)
 		}
+
 		validator, err := jsonschema.CompileString("schema.json", schema)
 		if err != nil {
 			return fmt.Errorf("failed to compile JSON schema %s: %s", err, schema)
@@ -284,8 +287,13 @@ func validateSchema(d *schema.ResourceData, context map[string]interface{}) erro
 		}
 
 		if err := validator.Validate(payload); err != nil {
-			return fmt.Errorf("failed to pass JSON schema validation: %s", err)
+			schemaErrors = append(schemaErrors, fmt.Errorf("failed to pass %s JSON schema validation: %s", humanize.Ordinal(index+1), err).Error())
+			continue
 		}
+	}
+
+	if len(schemaErrors) > 0 {
+		return fmt.Errorf("\n\t%s", strings.Join(schemaErrors, "\n\t"))
 	}
 
 	return nil
