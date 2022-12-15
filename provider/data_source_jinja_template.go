@@ -99,9 +99,21 @@ func dataSourceJinjaTemplate() *schema.Resource {
 				Description: "Path to the jinja template to render",
 			},
 			"schema": {
-				Type:        schema.TypeString,
+				Type:          schema.TypeString,
+				Optional:      true,
+				Description:   "Either inline or a path to a JSON schema to validate the context",
+				Deprecated:    "Deprecated in favor of the 'schemas' field",
+				ConflictsWith: []string{"schemas"},
+			},
+			"schemas": {
+				Type:        schema.TypeList,
 				Optional:    true,
-				Description: "Either inline or a path to a JSON schema to validate the context",
+				Description: "List of either inline or paths to JSON schemas to validate one by one in order against the context",
+				MinItems:    1,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+				ConflictsWith: []string{"schema"},
 			},
 			"context": {
 				Type:        schema.TypeList,
@@ -236,9 +248,19 @@ func parseContext(d *schema.ResourceData) (map[string]interface{}, error) {
 }
 
 func validateSchema(d *schema.ResourceData, context map[string]interface{}) error {
-	schemaField, ok := d.GetOk("schema")
+	schemas := make([]interface{}, 0)
 
-	if ok {
+	if schemaField, ok := d.GetOk("schema"); ok {
+		schemas = append(schemas, schemaField)
+	} else if schemasField, ok := d.GetOk("schemas"); ok {
+		castSchemasField, castOk := schemasField.([]interface{})
+		if !castOk {
+			return fmt.Errorf("field 'schemas' is not a list: %v", schemaField)
+		}
+		schemas = castSchemasField
+	}
+
+	for _, schemaField := range schemas {
 		schema := schemaField.(string)
 		if _, err := os.Stat(schema); err == nil {
 			content, err := ioutil.ReadFile(schema)

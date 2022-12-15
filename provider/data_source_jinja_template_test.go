@@ -489,6 +489,7 @@ func TestJinjaTemplateWithInlineSchema(t *testing.T) {
 		},
 	})
 }
+
 func TestJinjaTemplateWithSchemaThatFails(t *testing.T) {
 	schema, _, dir, remove_schema := mustCreateFile("nested", heredoc.Doc(`
 	{
@@ -671,6 +672,204 @@ func TestJinjaTemplateWithIntegerInYAMLContext(t *testing.T) {
 						return nil
 					}),
 				),
+			},
+		},
+	})
+}
+
+func TestJinjaTemplateWithSchemaAndSchemas(t *testing.T) {
+	schema, _, dir, remove_schema := mustCreateFile("nested", heredoc.Doc(`
+	{
+		"type": "object",
+		"required": [
+			"name",
+			"other"
+		],
+		"properties": {
+			"name": {
+				"type": "string"
+			},
+			"other": {
+				"type": "object",
+				"required": ["foo"],
+				"properties": {
+					"foo": {
+						"type": "string"
+					}
+				}
+			}
+		}
+	}
+	`))
+	defer remove_schema()
+
+	template, _, _, remove_template := mustCreateFile(t.Name(), heredoc.Doc(`
+	The name field is: "{{ name }}"
+	`), dir)
+	defer remove_template()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProviderFactories: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: heredoc.Doc(`
+				data "jinja_template" "render" {
+					template = "` + path.Join(dir, template) + `"
+					context {
+						type = "yaml"
+						data = yamlencode({
+							name = "schema"
+							other = {
+								"foo" = "bar"
+							}
+						})
+					}
+					schema = "` + path.Join(dir, schema) + `"
+					schemas = ["` + path.Join(dir, schema) + `"]
+				}`),
+				ExpectError: regexp.MustCompile("Error: Conflicting configuration arguments"),
+			},
+		},
+	})
+}
+
+func TestJinjaTemplateWithMultipleSchemas(t *testing.T) {
+	schema, _, dir, remove_schema := mustCreateFile("nested", heredoc.Doc(`
+	{
+		"type": "object",
+		"required": [
+			"name"
+		],
+		"properties": {
+			"name": {
+				"type": "string"
+			}
+		}
+	}
+	`))
+	defer remove_schema()
+
+	template, _, _, remove_template := mustCreateFile(t.Name(), heredoc.Doc(`
+	The name field is: "{{ name }}"
+	`), dir)
+	defer remove_template()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProviderFactories: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: heredoc.Doc(`
+				data "jinja_template" "render" {
+					template = "` + path.Join(dir, template) + `"
+					context {
+						type = "yaml"
+						data = yamlencode({
+							name = "schema"
+							other = {
+								"foo" = "bar"
+							}
+						})
+					}
+					schemas = [
+						"` + path.Join(dir, schema) + `",
+						<<-EOF
+						{
+							"type": "object",
+							"required": [
+								"other"
+							],
+							"properties": {
+								"other": {
+									"type": "object",
+									"required": ["foo"],
+									"properties": {
+										"foo": {
+											"type": "string"
+										}
+									}
+								}
+							}
+						}
+						EOF
+					]
+				}`),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
+					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
+						expected := heredoc.Doc(`
+						The name field is: "schema"`)
+						if expected != got {
+							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+						}
+						return nil
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestJinjaTemplateWithMultipleSchemasWhenOneIsFailing(t *testing.T) {
+	schema, _, dir, remove_schema := mustCreateFile("nested", heredoc.Doc(`
+	{
+		"type": "object",
+		"required": [
+			"name"
+		],
+		"properties": {
+			"name": {
+				"type": "string"
+			}
+		}
+	}
+	`))
+	defer remove_schema()
+
+	template, _, _, remove_template := mustCreateFile(t.Name(), heredoc.Doc(`
+	The name field is: "{{ name }}"
+	`), dir)
+	defer remove_template()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProviderFactories: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: heredoc.Doc(`
+				data "jinja_template" "render" {
+					template = "` + path.Join(dir, template) + `"
+					context {
+						type = "yaml"
+						data = yamlencode({
+							name = 123
+							other = {
+								"foo" = "bar"
+							}
+						})
+					}
+					schemas = [
+						"` + path.Join(dir, schema) + `",
+						<<-EOF
+						{
+							"type": "object",
+							"required": [
+								"other"
+							],
+							"properties": {
+								"other": {
+									"type": "object",
+									"required": ["foo"],
+									"properties": {
+										"foo": {
+											"type": "string"
+										}
+									}
+								}
+							}
+						}
+						EOF
+					]
+				}`),
+				ExpectError: regexp.MustCompile("Error: failed to validate context against schema: failed to pass JSON schema validation: jsonschema: '/name' does not validate with .*#/properties/name/type: expected string, but got number"),
 			},
 		},
 	})

@@ -45,7 +45,8 @@ data "jinja_template" "render" {
 - `delimiters` (Block List, Max: 1) Custom delimiters for the jinja engine (see [below for nested schema](#nestedblock--delimiters))
 - `footer` (String) Footer to add at the bottom of the template before rendering
 - `header` (String) Header to add at the top of the template before rendering
-- `schema` (String) Either inline or a path to a JSON schema to validate the context
+- `schema` (String, Deprecated) Either inline or a path to a JSON schema to validate the context
+- `schemas` (List of String) List of either inline or paths to JSON schemas to validate one by one in order against the context
 
 ### Read-Only
 
