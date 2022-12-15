@@ -9,36 +9,54 @@ description: |-
 
 The "jinja" provider makes it possible to use [Jinja](https://jinja.palletsprojects.com) templating within Terraform context. This is a *logical provider*, which means that it works entirely within Terraform's logic, and doesn't interact with any other services.
 
-The Jinja engine used under the hood is based on [the `gonja` Golang library](https://github.com/noirbizarre/gonja) and aims to be "mostly" compliant with the Jinja API. Moreover, the following additional features have been added on top of `gonja` for ease of use:
-* A new filter called `ifelse` to allow for ternary conditions as follows:
-  ```
-  true is {{"{{"}} "foo" in "foo bar" | ifelse("yes", "no") {{"}}"}}
-  false is {{"{{"}} "yolo" in "foo bar" | ifelse("yes", "no") {{"}}"}}
-  ```
-  Which will render into:
-  ```
-  true is yes
-  false is no
-  ```
-* A new filter called `get` to be able to get an item in a map with a dynamic key:
-  ```
-  {{"{%"}} set tac = "key" {{"%}"}}
-  {{"{{"}} tic | get(tac) {{"}}"}}
-  ```
-  With the following YAML context:
-  ```
-  tic:
-    key: toe
-  ```
-  Will render into:
-  ```
-  toe
-  ```
-
-The JSON schema validation engine is based on [the `jsonschema` Golang library](https://github.com/santhosh-tekuri/jsonschema).
-
 ## Example
 
 {{ tffile "examples/provider.tf" }}
 
 {{ .SchemaMarkdown | trimspace }}
+
+## Important considerations
+
+The Jinja engine used under the hood is based on [the `gonja` Golang library](https://github.com/noirbizarre/gonja) and aims to be "mostly" compliant with the Jinja API. 
+
+The [official Jinja API documentation](https://jinja.palletsprojects.com/en/3.0.x) and especially the [list of builtin filters](https://jinja.palletsprojects.com/en/3.0.x/templates/#list-of-builtin-filters) can be used as reference for using this provider. However, should the need for the exact implementation arise, one can easily refer to the `gonja` source code:
+
+* for filters: https://github.com/noirbizarre/gonja/blob/master/builtins/filters.go
+* for globals: https://github.com/noirbizarre/gonja/blob/master/builtins/globals.go
+* for statements: https://github.com/noirbizarre/gonja/tree/master/builtins/statements
+
+Finally, the JSON schema validation engine is based on [the `jsonschema` Golang library](https://github.com/santhosh-tekuri/jsonschema).
+
+The following sections describe additional features that have been added to improve the developer experience.
+
+### The `ifelse` filter
+
+The `ifelse` filter is meant to perform ternary conditions as follows:
+
+```
+true is {{"{{"}} "foo" in "foo bar" | ifelse("yes", "no") {{"}}"}}
+false is {{"{{"}} "yolo" in "foo bar" | ifelse("yes", "no") {{"}}"}}
+```
+Which will render into:
+```
+true is yes
+false is no
+```
+
+### The `get` filter
+
+The `get` filter helps getting an item in a map with a dynamic key:
+
+```
+{{"{%"}} set tac = "key" {{"%}"}}
+{{"{{"}} tic | get(tac) {{"}}"}}
+```
+With the following YAML context:
+```
+tic:
+  key: toe
+```
+Will render into:
+```
+toe
+```
