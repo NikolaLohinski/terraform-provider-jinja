@@ -22,8 +22,8 @@ data "jinja_template" "render" {
     // can be either a path or inline
     data = "${path.module}/src/context.yaml"
   }
-  // can be either a path or inline
-  schema = "${path.module}/src/schema.json"
+  // is a list of either a path or inline, or both
+  schemas = ["${path.module}/src/schema.json"]
 
   header = "some macro for example"
   footer = <<-EOF
