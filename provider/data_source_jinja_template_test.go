@@ -495,7 +495,7 @@ func TestJinjaTemplateWithSchemaThatFails(t *testing.T) {
 	{
 		"type": "object",
 		"required": [
-			"name",
+			"name"
 		],
 		"properties": {
 			"name": {
