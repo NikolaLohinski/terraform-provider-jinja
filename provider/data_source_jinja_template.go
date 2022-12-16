@@ -32,6 +32,14 @@ var default_delimiters = map[string]interface{}{
 
 var context_types = []string{"yaml", "json"}
 
+func strictUndefinedSchema() *schema.Schema {
+	return &schema.Schema{
+		Type:        schema.TypeBool,
+		Description: "Toggle to fail rendering on missing attribute/item",
+		Optional:    true,
+	}
+}
+
 func delimitersSchema() *schema.Schema {
 	return &schema.Schema{
 		Type:        schema.TypeList,
@@ -137,7 +145,8 @@ func dataSourceJinjaTemplate() *schema.Resource {
 					},
 				},
 			},
-			"delimiters": delimitersSchema(),
+			"delimiters":       delimitersSchema(),
+			"strict_undefined": strictUndefinedSchema(),
 			"result": {
 				Type:        schema.TypeString,
 				Computed:    true,
@@ -300,30 +309,39 @@ func validateSchema(d *schema.ResourceData, context map[string]interface{}) erro
 }
 
 func getRenderingEnvironment(d *schema.ResourceData, meta interface{}) (*gonja.Environment, error) {
+	metaObject := meta.(map[string]interface{})
+	config := config.DefaultConfig
+
+	providerDelimiters := metaObject["delimiters"].(map[string]interface{})
+
 	var delimiters map[string]interface{}
-
-	provider_delimiters := meta.(map[string]interface{})
-
-	delimiters_block, ok := d.GetOk("delimiters.0")
+	delimitersBlock, ok := d.GetOk("delimiters.0")
 	if !ok {
-		delimiters = provider_delimiters
+		delimiters = providerDelimiters
 	} else {
-		delimiters = delimiters_block.(map[string]interface{})
+		delimiters = delimitersBlock.(map[string]interface{})
 		for name, delimiter := range delimiters {
 			if default_value, ok := default_delimiters[name]; ok && delimiter != default_value {
 				continue
 			}
-			delimiters[name] = provider_delimiters[name]
+			delimiters[name] = providerDelimiters[name]
 		}
 	}
-
-	config := config.DefaultConfig
 	config.BlockStartString = delimiters["block_start"].(string)
 	config.BlockEndString = delimiters["block_end"].(string)
 	config.VariableStartString = delimiters["variable_start"].(string)
 	config.VariableEndString = delimiters["variable_end"].(string)
 	config.CommentStartString = delimiters["comment_start"].(string)
 	config.CommentEndString = delimiters["comment_end"].(string)
+
+	strictUndefined, ok := d.GetOk("strict_undefined")
+	if !ok {
+		strictUndefined, ok = metaObject["strict_undefined"]
+		if !ok {
+			strictUndefined = false
+		}
+	}
+	config.StrictUndefined = strictUndefined.(bool)
 
 	template := d.Get("template").(string)
 	loader, err := loaders.NewFileSystemLoader(path.Dir(template))

@@ -31,6 +31,7 @@ provider "jinja" {
 ### Optional
 
 - `delimiters` (Block List, Max: 1) Provider-wide custom delimiters for the jinja engine (see [below for nested schema](#nestedblock--delimiters))
+- `strict_undefined` (Boolean) Provider-wide toggle to fail on missing attribute/item
 
 <a id="nestedblock--delimiters"></a>
 ### Nested Schema for `delimiters`

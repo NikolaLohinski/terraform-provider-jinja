@@ -47,6 +47,7 @@ data "jinja_template" "render" {
 - `header` (String) Header to add at the top of the template before rendering
 - `schema` (String, Deprecated) Either inline or a path to a JSON schema to validate the context
 - `schemas` (List of String) List of either inline or paths to JSON schemas to validate one by one in order against the context
+- `strict_undefined` (Boolean) Toggle to fail rendering on missing attribute/item
 
 ### Read-Only
 

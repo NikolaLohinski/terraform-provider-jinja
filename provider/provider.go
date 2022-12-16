@@ -11,9 +11,12 @@ import (
 func Provider() *schema.Provider {
 	delimiters := delimitersSchema()
 	delimiters.Description = "Provider-wide custom delimiters for the jinja engine"
+	strictUndefined := strictUndefinedSchema()
+	strictUndefined.Description = "Provider-wide toggle to fail on missing attribute/item"
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
-			"delimiters": delimiters,
+			"delimiters":       delimiters,
+			"strict_undefined": strictUndefined,
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"jinja_template": dataSourceJinjaTemplate(),
@@ -23,11 +26,18 @@ func Provider() *schema.Provider {
 }
 
 func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
+	meta := make(map[string]interface{})
 	// Must provide default at runtime because TypeList and TypSet ignore DefaultFunc
 	// See https://github.com/hashicorp/terraform-plugin-sdk/issues/142
 	delimiters, ok := d.GetOk("delimiters.0")
-	if !ok {
-		return default_delimiters, nil
+	if ok {
+		meta["delimiters"] = delimiters
+	} else {
+		meta["delimiters"] = default_delimiters
 	}
-	return delimiters, nil
+	strictUndefined, ok := d.GetOk("strict_undefined")
+	if ok {
+		meta["strict_undefined"] = strictUndefined
+	}
+	return meta, nil
 }

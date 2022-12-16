@@ -941,3 +941,69 @@ func TestJinjaTemplateWithMultipleSchemasWhenMultipleAreFailing(t *testing.T) {
 		},
 	})
 }
+
+func TestJinjaTemplateWithStrictUndefined(t *testing.T) {
+	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
+	This is a very nested {{ dict.missing }}
+
+	`))
+	defer remove()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProviderFactories: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: heredoc.Doc(`
+				data "jinja_template" "render" {
+					template = "` + path.Join(dir, template) + `"
+					context {
+						type = "json"
+						data = jsonencode({
+							top = {
+								other = "value"
+							}
+						})
+					}
+					strict_undefined = true
+				}`),
+				ExpectError: regexp.MustCompile(heredoc.Doc(`
+				Error: failed to execute template: Unable to Execute template: Unable to render expression at line 1: dict.missing: Unable to evaluate dict.missing: attribute 'missing' not found
+				`)),
+			},
+		},
+	})
+}
+
+func TestJinjaTemplateWithProviderStrictUndefined(t *testing.T) {
+	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
+	This is a very nested {{ dict.missing }}
+
+	`))
+	defer remove()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProviderFactories: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: heredoc.Doc(`
+				provider "jinja" {
+					strict_undefined = true
+				}
+				data "jinja_template" "render" {
+					template = "` + path.Join(dir, template) + `"
+					context {
+						type = "json"
+						data = jsonencode({
+							top = {
+								other = "value"
+							}
+						})
+					}
+				}`),
+				ExpectError: regexp.MustCompile(heredoc.Doc(`
+				Error: failed to execute template: Unable to Execute template: Unable to render expression at line 1: dict.missing: Unable to evaluate dict.missing: attribute 'missing' not found
+				`)),
+			},
+		},
+	})
+}
