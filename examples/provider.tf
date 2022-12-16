@@ -8,4 +8,5 @@ provider "jinja" {
     comment_start  = "{#"
     comment_end    = "#}"
   }
+  strict_undefined = true
 }

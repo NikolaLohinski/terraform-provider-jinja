@@ -10,7 +10,7 @@ data "jinja_template" "render" {
   // is a list of either a path or inline, or both
   schemas = ["${path.module}/src/schema.json"]
 
-  strict_undefined = true
+  strict_undefined = false
   header           = "some macro for example"
   footer           = <<-EOF
     some value
