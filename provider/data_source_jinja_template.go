@@ -3,6 +3,7 @@ package jinja
 import (
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -12,7 +13,6 @@ import (
 	humanize "github.com/dustin/go-humanize"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-	json "github.com/json-iterator/go"
 	"github.com/noirbizarre/gonja"
 	"github.com/noirbizarre/gonja/config"
 	"github.com/noirbizarre/gonja/exec"
@@ -242,7 +242,12 @@ func parseContext(d *schema.ResourceData) (map[string]interface{}, error) {
 
 		switch strings.ToLower(kind.(string)) {
 		case "json":
-			if err := json.Unmarshal([]byte(data.(string)), &context); err != nil {
+			// Validate JSON context format before unmarshalling with YAML decoder to avoid casting ints to floats
+			// see https://stackoverflow.com/questions/71525600/golang-json-converts-int-to-float-what-can-i-do
+			if err := json.Unmarshal([]byte(data.(string)), &map[string]interface{}{}); err != nil {
+				return nil, fmt.Errorf("failed to decode JSON context: %v", data)
+			}
+			if err := yaml.Unmarshal([]byte(data.(string)), &context); err != nil {
 				return nil, fmt.Errorf("failed to unmarshal JSON context: %v", data)
 			}
 		case "yaml":

@@ -196,7 +196,7 @@ func TestJinjaTemplateOtherDelimiters(t *testing.T) {
 func TestJinjaTemplateWithContextJSON(t *testing.T) {
 	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
 	This is a very nested {{ top.middle.bottom.field }}
-
+	And this is an integer: {{ integer }}
 	`))
 	defer remove()
 
@@ -217,6 +217,7 @@ func TestJinjaTemplateWithContextJSON(t *testing.T) {
 									}
 								}
 							}
+							integer = 123
 						})
 					}
 				}`),
@@ -225,7 +226,7 @@ func TestJinjaTemplateWithContextJSON(t *testing.T) {
 					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
 						expected := heredoc.Doc(`
 						This is a very nested surprise!
-						`)
+						And this is an integer: 123`)
 						if expected != got {
 							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
 						}

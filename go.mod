@@ -5,8 +5,8 @@ go 1.18
 require (
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/dustin/go-humanize v1.0.0
+	github.com/francoispqt/gojay v1.2.13
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.24.1
-	github.com/json-iterator/go v1.1.12
 	github.com/noirbizarre/gonja v0.0.0-20200629003239-4d051fd0be61
 	github.com/pkg/errors v0.9.1
 	github.com/santhosh-tekuri/jsonschema/v5 v5.1.1
@@ -47,8 +47,6 @@ require (
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
-	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/oklog/run v1.1.0 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/vmihailenco/msgpack v4.0.4+incompatible // indirect
