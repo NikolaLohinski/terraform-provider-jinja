@@ -65,4 +65,4 @@ require (
 	google.golang.org/protobuf v1.28.1 // indirect
 )
 
-replace github.com/noirbizarre/gonja v0.0.0-20200629003239-4d051fd0be61 => github.com/nikolalohinski/gonja v0.0.0-20221216101906-e9affae78239
+replace github.com/noirbizarre/gonja v0.0.0-20200629003239-4d051fd0be61 => github.com/nikolalohinski/gonja v0.0.0-20230104122406-ae703d91af85

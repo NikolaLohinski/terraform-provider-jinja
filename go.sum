@@ -166,8 +166,8 @@ github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd/go.mod h1:6dJ
 github.com/modern-go/reflect2 v1.0.2 h1:xBagoLtFs94CBntxluKeaWgTMpvLxC4ur3nMaC9Gz0M=
 github.com/modern-go/reflect2 v1.0.2/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
-github.com/nikolalohinski/gonja v0.0.0-20221216101906-e9affae78239 h1:6B0+vvoJde2R8WGzXH7n3qVma28CC0K3uwbuhBjiS6U=
-github.com/nikolalohinski/gonja v0.0.0-20221216101906-e9affae78239/go.mod h1:WboHq+I9Ck8PwKsVFJNrpiRyngXhquRSTWBGwuSWOrg=
+github.com/nikolalohinski/gonja v0.0.0-20230104122406-ae703d91af85 h1:toQBPghsFwktY64DpuiHosdYdHNW+Kof3JlvCzI3HR8=
+github.com/nikolalohinski/gonja v0.0.0-20230104122406-ae703d91af85/go.mod h1:WboHq+I9Ck8PwKsVFJNrpiRyngXhquRSTWBGwuSWOrg=
 github.com/oklog/run v1.1.0 h1:GEenZ1cK0+q0+wsJew9qUg/DyD8k3JzYsZAi5gYi2mA=
 github.com/oklog/run v1.1.0/go.mod h1:sVPdnTZT1zYwAJeCMu2Th4T21pA3FPOQRfWjQlk7DVU=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=

@@ -1007,3 +1007,35 @@ func TestJinjaTemplateWithProviderStrictUndefined(t *testing.T) {
 		},
 	})
 }
+
+func TestJinjaTemplateWithStrictUndefinedAtRootLevel(t *testing.T) {
+	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
+	This is {{ missing }}
+
+	`))
+	defer remove()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProviderFactories: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: heredoc.Doc(`
+				data "jinja_template" "render" {
+					template = "` + path.Join(dir, template) + `"
+					context {
+						type = "json"
+						data = jsonencode({
+							top = {
+								other = "value"
+							}
+						})
+					}
+					strict_undefined = true
+				}`),
+				ExpectError: regexp.MustCompile(heredoc.Doc(`
+				Error: failed to execute template: Unable to Execute template: Unable to render expression at line 1: missing: Unable to evaluate name "missing"
+				`)),
+			},
+		},
+	})
+}
