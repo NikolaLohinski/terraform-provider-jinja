@@ -4,21 +4,16 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
 	"strings"
 
-	humanize "github.com/dustin/go-humanize"
+	"terraform-provider-jinja/lib"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-	"github.com/noirbizarre/gonja"
-	"github.com/noirbizarre/gonja/config"
-	"github.com/noirbizarre/gonja/exec"
-	"github.com/noirbizarre/gonja/loaders"
-	"github.com/santhosh-tekuri/jsonschema/v5"
-	"gopkg.in/yaml.v3"
 )
 
 var default_delimiters = map[string]interface{}{
@@ -89,7 +84,7 @@ func delimitersSchema() *schema.Schema {
 
 func dataSourceJinjaTemplate() *schema.Resource {
 	return &schema.Resource{
-		Read:        render,
+		Read:        read,
 		Description: "The jinja_template data source renders a jinja template with a given template with possible JSON schema validation of the context",
 		Schema: map[string]*schema.Schema{
 			"header": {
@@ -156,32 +151,18 @@ func dataSourceJinjaTemplate() *schema.Resource {
 	}
 }
 
-func render(d *schema.ResourceData, meta interface{}) error {
-	environment, err := getRenderingEnvironment(d, meta)
+func read(d *schema.ResourceData, meta interface{}) error {
+	ctx, err := parseContext(d, meta)
 	if err != nil {
-		return fmt.Errorf("failed to build jinja environment: %s", err)
+		return fmt.Errorf("failed to parse configuration passed to provider: %s", err)
 	}
 
-	template, err := parseTemplate(d, environment)
+	result, err := lib.Render(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to parse template: %s", err)
+		return fmt.Errorf("failed to render context: %s", err)
 	}
 
-	context, err := parseContext(d)
-	if err != nil {
-		return fmt.Errorf("failed to parse context: %s", err)
-	}
-
-	if err := validateSchema(d, context); err != nil {
-		return fmt.Errorf("failed to validate context against schema: %s", err)
-	}
-
-	result, err := template.Execute(context)
-	if err != nil {
-		return fmt.Errorf("failed to execute template: %s", err)
-	}
-
-	if err := d.Set("result", result); err != nil {
+	if err := d.Set("result", string(result)); err != nil {
 		return fmt.Errorf("failed to output result: %s", err)
 	}
 
@@ -193,132 +174,73 @@ func render(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func parseTemplate(d *schema.ResourceData, environment *gonja.Environment) (*exec.Template, error) {
-	template := d.Get("template").(string)
-
-	file, err := environment.Loader.Get(path.Base(template))
+func parseContext(d *schema.ResourceData, meta interface{}) (*lib.Context, error) {
+	values, err := parseValues(d)
 	if err != nil {
-		return nil, fmt.Errorf("error loading file: %s", err)
+		return nil, fmt.Errorf("failed to parse context: %s", err)
 	}
 
-	buffer, err := ioutil.ReadAll(file)
+	schemas, err := parseSchemas(d)
 	if err != nil {
-		return nil, fmt.Errorf("error reading template: %s", err)
+		return nil, fmt.Errorf("failed to parse schemas: %s", err)
 	}
 
-	bundle := string(buffer)
-	if header := d.Get("header").(string); header != "" {
-		bundle = header + "\n" + bundle
-	}
-	if footer := d.Get("footer").(string); footer != "" {
-		bundle = bundle + "\n" + footer
+	configuration, err := parseConfiguration(d, meta)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse configuration: %s", err)
 	}
 
-	return exec.NewTemplate(template, bundle, environment.EvalConfig)
+	return &lib.Context{
+		Template: lib.Template{
+			Header:   d.Get("header").(string),
+			Footer:   d.Get("footer").(string),
+			Location: d.Get("template").(string),
+		},
+		Schemas:       schemas,
+		Values:        values,
+		Configuration: configuration,
+	}, nil
 }
 
-func parseContext(d *schema.ResourceData) (map[string]interface{}, error) {
-	context := make(map[string]interface{})
-
-	context_blocks, ok := d.GetOk("context")
-	if ok {
-		contexts, ok := context_blocks.([]interface{})
-		if !ok {
-			return nil, fmt.Errorf("context blocks are invalid: %s", context_blocks)
-		}
-		if len(contexts) != 1 {
-			return nil, fmt.Errorf("context block if defined must be unique: %s", context_blocks)
-		}
-		kind := d.Get("context.0.type")
-		data := d.Get("context.0.data")
-
-		if _, err := os.Stat(data.(string)); err == nil {
-			content, err := ioutil.ReadFile(data.(string))
-			if err != nil {
-				return nil, fmt.Errorf("failed to read path %s: %s", data, err)
-			}
-			data = string(content)
-		}
-
-		switch strings.ToLower(kind.(string)) {
-		case "json":
-			// Validate JSON context format before unmarshalling with YAML decoder to avoid casting ints to floats
-			// see https://stackoverflow.com/questions/71525600/golang-json-converts-int-to-float-what-can-i-do
-			if err := json.Unmarshal([]byte(data.(string)), &map[string]interface{}{}); err != nil {
-				return nil, fmt.Errorf("failed to decode JSON context: %v", data)
-			}
-			if err := yaml.Unmarshal([]byte(data.(string)), &context); err != nil {
-				return nil, fmt.Errorf("failed to unmarshal JSON context: %v", data)
-			}
-		case "yaml":
-			if err := yaml.Unmarshal([]byte(data.(string)), &context); err != nil {
-				return nil, fmt.Errorf("failed to unmarshal YAML context: %v", data)
-			}
-		default:
-			return nil, fmt.Errorf("provided context has an unsupported type: %v", kind)
-		}
-	}
-
-	return context, nil
-}
-
-func validateSchema(d *schema.ResourceData, context map[string]interface{}) error {
-	schemas := make([]interface{}, 0)
-
+func parseSchemas(d *schema.ResourceData) ([]json.RawMessage, error) {
+	stringSchemas := make([]string, 0)
 	if schemaField, ok := d.GetOk("schema"); ok {
-		schemas = append(schemas, schemaField)
+		stringSchemas = append(stringSchemas, schemaField.(string))
 	} else if schemasField, ok := d.GetOk("schemas"); ok {
 		castSchemasField, castOk := schemasField.([]interface{})
 		if !castOk {
-			return fmt.Errorf("field 'schemas' is not a list: %v", schemaField)
+			return nil, fmt.Errorf("field 'schemas' is not a list: %v", schemaField)
 		}
-		schemas = castSchemasField
+		for _, schema := range castSchemasField {
+			stringSchemas = append(stringSchemas, schema.(string))
+		}
 	}
 
-	schemaErrors := []string{}
-	for index, schemaField := range schemas {
-		schema := schemaField.(string)
-		if _, err := os.Stat(schema); err == nil {
-			content, err := ioutil.ReadFile(schema)
+	schemas := make([]json.RawMessage, len(stringSchemas))
+	for i, stringSchema := range stringSchemas {
+		if _, err := os.Stat(stringSchema); err == nil {
+			content, err := ioutil.ReadFile(stringSchema)
 			if err != nil {
-				return fmt.Errorf("failed to read path %s: %s", schema, err)
+				return nil, fmt.Errorf("failed to read path %s: %s", stringSchema, err)
 			}
-			schema = string(content)
-		}
-
-		validator, err := jsonschema.CompileString("schema.json", schema)
-		if err != nil {
-			return fmt.Errorf("failed to compile JSON schema %s: %s", err, schema)
-		}
-
-		bytes, err := json.Marshal(context)
-		if err != nil {
-			return fmt.Errorf("failed to marshal context to JSON: %v", err)
-		}
-		var payload interface{}
-		if err := json.Unmarshal(bytes, &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal context back from JSON: %v", err)
-		}
-
-		if err := validator.Validate(payload); err != nil {
-			schemaErrors = append(schemaErrors, fmt.Errorf("failed to pass %s JSON schema validation: %s", humanize.Ordinal(index+1), err).Error())
-			continue
+			schemas[i] = json.RawMessage(content)
+		} else {
+			schemas[i] = json.RawMessage(stringSchema)
 		}
 	}
 
-	if len(schemaErrors) > 0 {
-		return fmt.Errorf("\n\t%s", strings.Join(schemaErrors, "\n\t"))
-	}
-
-	return nil
+	return schemas, nil
 }
 
-func getRenderingEnvironment(d *schema.ResourceData, meta interface{}) (*gonja.Environment, error) {
-	metaObject := meta.(map[string]interface{})
-	config := config.DefaultConfig
-
-	providerDelimiters := metaObject["delimiters"].(map[string]interface{})
-
+func parseConfiguration(d *schema.ResourceData, meta interface{}) (lib.Configuration, error) {
+	metaObject, ok := meta.(map[string]interface{})
+	if !ok {
+		return lib.Configuration{}, errors.New("provider configuration is invalid")
+	}
+	providerDelimiters, ok := metaObject["delimiters"].(map[string]interface{})
+	if !ok {
+		return lib.Configuration{}, errors.New("provider delimiters configuration is invalid")
+	}
 	var delimiters map[string]interface{}
 	delimitersBlock, ok := d.GetOk("delimiters.0")
 	if !ok {
@@ -332,12 +254,6 @@ func getRenderingEnvironment(d *schema.ResourceData, meta interface{}) (*gonja.E
 			delimiters[name] = providerDelimiters[name]
 		}
 	}
-	config.BlockStartString = delimiters["block_start"].(string)
-	config.BlockEndString = delimiters["block_end"].(string)
-	config.VariableStartString = delimiters["variable_start"].(string)
-	config.VariableEndString = delimiters["variable_end"].(string)
-	config.CommentStartString = delimiters["comment_start"].(string)
-	config.CommentEndString = delimiters["comment_end"].(string)
 
 	strictUndefined, ok := d.GetOk("strict_undefined")
 	if !ok {
@@ -346,21 +262,48 @@ func getRenderingEnvironment(d *schema.ResourceData, meta interface{}) (*gonja.E
 			strictUndefined = false
 		}
 	}
-	config.StrictUndefined = strictUndefined.(bool)
 
-	template := d.Get("template").(string)
-	loader, err := loaders.NewFileSystemLoader(path.Dir(template))
-	if err != nil {
-		return nil, fmt.Errorf("failed get a file system loader: %v", err)
-	}
+	return lib.Configuration{
+		StrictUndefined: strictUndefined.(bool),
+		Delimiters: lib.Delimiters{
+			BlockStart:    delimiters["block_start"].(string),
+			BlockEnd:      delimiters["block_end"].(string),
+			VariableStart: delimiters["variable_start"].(string),
+			VariableEnd:   delimiters["variable_end"].(string),
+			CommentStart:  delimiters["comment_start"].(string),
+			CommentEnd:    delimiters["comment_end"].(string),
+		},
+	}, nil
+}
 
-	environment := gonja.NewEnvironment(config, loader)
-
-	for name, filter := range Filters {
-		if err := environment.Filters.Register(name, filter); err != nil {
-			return nil, fmt.Errorf("failed register filter %s: %s", name, err)
+func parseValues(d *schema.ResourceData) (*lib.Values, error) {
+	context_blocks, ok := d.GetOk("context")
+	if ok {
+		contexts, ok := context_blocks.([]interface{})
+		if !ok {
+			return nil, fmt.Errorf("context blocks are invalid: %s", context_blocks)
 		}
+		if len(contexts) != 1 {
+			return nil, fmt.Errorf("context block if defined must be unique: %s", context_blocks)
+		}
+		kind := d.Get("context.0.type").(string)
+		dataField := d.Get("context.0.data")
+
+		var data []byte
+		if _, err := os.Stat(dataField.(string)); err == nil {
+			data, err = ioutil.ReadFile(dataField.(string))
+			if err != nil {
+				return nil, fmt.Errorf("failed to read path %s: %s", data, err)
+			}
+		} else {
+			data = []byte(dataField.(string))
+		}
+
+		return &lib.Values{
+			Type: kind,
+			Data: data,
+		}, nil
 	}
 
-	return environment, nil
+	return nil, nil
 }

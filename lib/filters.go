@@ -1,4 +1,4 @@
-package jinja
+package lib
 
 import (
 	"github.com/noirbizarre/gonja/exec"

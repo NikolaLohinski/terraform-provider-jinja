@@ -968,7 +968,7 @@ func TestJinjaTemplateWithStrictUndefined(t *testing.T) {
 					strict_undefined = true
 				}`),
 				ExpectError: regexp.MustCompile(heredoc.Doc(`
-				Error: failed to execute template: Unable to Execute template: Unable to render expression at line 1: dict.missing: Unable to evaluate dict.missing: attribute 'missing' not found
+				Error: .* Unable to evaluate dict.missing: attribute 'missing' not found
 				`)),
 			},
 		},
@@ -1002,7 +1002,7 @@ func TestJinjaTemplateWithProviderStrictUndefined(t *testing.T) {
 					}
 				}`),
 				ExpectError: regexp.MustCompile(heredoc.Doc(`
-				Error: failed to execute template: Unable to Execute template: Unable to render expression at line 1: dict.missing: Unable to evaluate dict.missing: attribute 'missing' not found
+				Error: .* Unable to evaluate dict.missing: attribute 'missing' not found
 				`)),
 			},
 		},
@@ -1034,7 +1034,7 @@ func TestJinjaTemplateWithStrictUndefinedAtRootLevel(t *testing.T) {
 					strict_undefined = true
 				}`),
 				ExpectError: regexp.MustCompile(heredoc.Doc(`
-				Error: failed to execute template: Unable to Execute template: Unable to render expression at line 1: missing: Unable to evaluate name "missing"
+				Error: .* Unable to evaluate name "missing"
 				`)),
 			},
 		},
