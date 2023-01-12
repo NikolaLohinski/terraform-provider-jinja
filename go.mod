@@ -5,7 +5,6 @@ go 1.18
 require (
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/dustin/go-humanize v1.0.0
-	github.com/francoispqt/gojay v1.2.13
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.24.1
 	github.com/noirbizarre/gonja v0.0.0-20200629003239-4d051fd0be61
 	github.com/pkg/errors v0.9.1
