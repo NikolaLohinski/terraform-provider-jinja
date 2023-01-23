@@ -1,4 +1,4 @@
-module terraform-provider-jinja
+module github.com/nikolalohinski/terraform-provider-jinja
 
 go 1.18
 

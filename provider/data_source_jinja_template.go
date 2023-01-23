@@ -10,10 +10,9 @@ import (
 	"os"
 	"strings"
 
-	"terraform-provider-jinja/lib"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/nikolalohinski/terraform-provider-jinja/lib"
 )
 
 var default_delimiters = map[string]interface{}{

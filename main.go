@@ -2,8 +2,7 @@ package main
 
 import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
-
-	jinja "terraform-provider-jinja/provider"
+	jinja "github.com/nikolalohinski/terraform-provider-jinja/provider"
 )
 
 func main() {
