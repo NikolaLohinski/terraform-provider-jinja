@@ -133,3 +133,25 @@ a > b > c
 ```
 
 Note that the order of keys is not guaranteed as there is no ordering in Golang maps.
+
+### The `try` filter
+
+The `try` filter is meant to gracefully evaluate an expression. It returns an `undefined` value if the passed expression is undefined or throws an error and the value passed in the context pipeline otherwise. 
+
+```
+{%- if (empty.missing | try) is undefined -%}
+	Now you see me!
+{%- endif -%}
+```
+With the following YAML context and `strict_undefined` set to `true`:
+```
+empty: {}
+```
+Will render into:
+```
+Now you see me!
+```
+
+Important notes:
+* This is useful when `strict_undefined = true` is set but you need to handle a missing key gracefully without throwing errors in a template ;
+* The `try` filter behaves poorly if used like a function (as such `try(...)`). This is due to a limitation in the underlying Jinja engine, therefore, it asked of the user to prefer using the pipeline syntax with `|` to leverage this filter.

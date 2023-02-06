@@ -10,6 +10,7 @@ var Filters = exec.FilterSet{
 	"get":    filterGet,
 	"values": filterValues,
 	"keys":   filterKeys,
+	"try":    filterTry,
 }
 
 func filterIfElse(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
@@ -70,4 +71,14 @@ func filterKeys(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.V
 		return true
 	}, func() {})
 	return exec.AsValue(out)
+}
+
+func filterTry(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	if p := params.ExpectNothing(); p.IsError() {
+		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'try'"))
+	}
+	if in == nil || in.IsError() || !in.IsTrue() {
+		return exec.AsValue(nil)
+	}
+	return in
 }

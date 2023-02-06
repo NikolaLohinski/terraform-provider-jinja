@@ -1184,3 +1184,51 @@ func TestFilterKeys(t *testing.T) {
 	})
 }
 
+func TestFilterTry(t *testing.T) {
+	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
+	{%- if (foo.bar | try) is undefined %}
+	Now you see me without errors!
+	{%- endif %}
+	{%- if (no | try) %}
+	But here you don't!
+	{%- endif %}
+	{%- if (nested.rendered | try) is defined %}
+	You should see this: "{{ nested.rendered }}"
+	{%- endif %}
+	`))
+	defer remove()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProviderFactories: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: heredoc.Doc(`
+				data "jinja_template" "render" {
+					template = "` + path.Join(dir, template) + `"
+					context {
+						type = "yaml"
+						data = <<-EOF
+						no: false
+						nested:
+						  rendered: "value"
+						EOF
+					}
+					strict_undefined = true
+				}`),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
+					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
+						expected := heredoc.Doc(`
+
+						Now you see me without errors!
+						You should see this: "value"`)
+						if expected != got {
+							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+						}
+						return nil
+					}),
+				),
+			},
+		},
+	})
+}
