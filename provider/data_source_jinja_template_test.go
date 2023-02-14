@@ -1232,3 +1232,55 @@ func TestFilterTry(t *testing.T) {
 		},
 	})
 }
+
+func TestFilterToJSON(t *testing.T) {
+	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
+	{{ data | keys | tojson }}
+	{{ data | tojson }}
+	{{ data.array | tojson }}
+	{{ data.second | tojson(2) }}
+	`))
+	defer remove()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProviderFactories: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: heredoc.Doc(`
+				data "jinja_template" "render" {
+					template = "` + path.Join(dir, template) + `"
+					context {
+						type = "yaml"
+						data = <<-EOF
+						data:
+						  first: "one"
+						  second:
+						    other: "two"
+						  third:
+						  - field: in array
+						  array:
+						  - one
+						  - two
+						EOF
+					}
+				}`),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
+					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
+						expected := heredoc.Doc(`
+						["array","first","second","third"]
+						{"array":["one","two"],"first":"one","second":{"other":"two"},"third":[{"field":"in array"}]}
+						["one","two"]
+						{
+						  "other": "two"
+						}`)
+						if expected != got {
+							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+						}
+						return nil
+					}),
+				),
+			},
+		},
+	})
+}

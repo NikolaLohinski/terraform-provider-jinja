@@ -131,9 +131,7 @@ func getEnvironment(ctx *Context) (*gonja.Environment, error) {
 	environment := gonja.NewEnvironment(gonjaConfig, loader)
 
 	for name, filter := range Filters {
-		if err := environment.Filters.Register(name, filter); err != nil {
-			return nil, fmt.Errorf("failed register filter %s: %s", name, err)
-		}
+		environment.Filters.Update(exec.FilterSet{name: filter})
 	}
 
 	return environment, nil

@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"github.com/noirbizarre/gonja/builtins"
 	"github.com/noirbizarre/gonja/exec"
 	"github.com/pkg/errors"
 )
@@ -11,6 +12,7 @@ var Filters = exec.FilterSet{
 	"values": filterValues,
 	"keys":   filterKeys,
 	"try":    filterTry,
+	"tojson": filterToJSON,
 }
 
 func filterIfElse(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
@@ -81,4 +83,18 @@ func filterTry(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Va
 		return exec.AsValue(nil)
 	}
 	return in
+}
+
+func filterToJSON(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	// Monkey patching because the builtin json filter is broken for arrays
+	if in.IsList() {
+		inCast := make([]interface{}, in.Len())
+		for index := range inCast {
+			item := exec.ToValue(in.Index(index).Val)
+			inCast[index] = item.Val.Interface()
+		}
+		in = exec.AsValue(inCast)
+	}
+
+	return builtins.Filters["tojson"](e, in, params)
 }
