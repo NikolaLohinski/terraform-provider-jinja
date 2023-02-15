@@ -597,8 +597,7 @@ func TestJinjaTemplateWithHeaderMacro(t *testing.T) {
 	})
 }
 
-func TestNativeForLoop(t *testing.T) {
-	// Skip until native gonja loop is fixed
+func TestGonjaForLoop(t *testing.T) {
 	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
 	{%- for key, value in dictionary %}
 	{{ key }} = {{ value }}
@@ -630,6 +629,41 @@ func TestNativeForLoop(t *testing.T) {
 
 						foo = bar
 						tic = toc
+						`)
+						if expected != got {
+							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+						}
+						return nil
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestGonjaNoneValue(t *testing.T) {
+	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
+	{{ None is undefined }}
+	{{ nil is defined }}
+	{% set var = None %}{{ var }}
+	`))
+	defer remove()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProviderFactories: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: heredoc.Doc(`
+				data "jinja_template" "render" {
+					template = "` + path.Join(dir, template) + `"
+					strict_undefined = true
+				}`),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
+					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
+						expected := heredoc.Doc(`
+						True
+						False
 						`)
 						if expected != got {
 							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
