@@ -178,15 +178,30 @@ Will render into:
 ["one","two","three"]
 ```
 
-### The `add` filter
+### The `flatten` filter
 
-The `add` filter is meant to add an item to a list or a key value pair to a dict.
-It expects only one argument when the pipeline input is a list, and two arguments
-when the pipeline input is a dict.
+The `flatten` filter is meant to reduce a list of lists to a list of the underlying elements.
 
 ```
-{%- set object = {"existing": "value", "overridden": 123} | add("other", true) | add("overridden", "new") -%}
-{%- set array = ["one"] | add("two") | add("three") -%}
+{%- set array = [ ["one"], ["two", "three"] ] | flatten -%}
+{{ "{{" }} array | tojson {{ "}}" }}
+```
+Will render into:
+```
+["one","two","three"]
+```
+
+### The `add`, `append` and `insert` filters
+
+The `insert` filter is meant to add a key value pair to a dict. It expects a key and value to operate.
+
+The `append` filter adds an item to a list. It expects one value to work.
+
+The `add` filter is just the combination of both with type reflection to decide what to do.
+
+```
+{%- set object = {"existing": "value", "overridden": 123} | insert("other", true) | add("overridden", "new") -%}
+{%- set array = ["one"] | add("two") | append("three") -%}
 {{ "{{" }} object | tojson {{ "}}" }}
 {{ "{{" }} array | tojson {{ "}}" }}
 ```
@@ -194,4 +209,17 @@ Will render into:
 ```
 {"existing":"value","other":true,"overridden":"new"}
 ["one","two","three"]
+```
+
+### The `unset` filter
+
+The `unset` filter is meant to remove a key/value pair from a dict.
+
+```
+{%- set object = {"existing": "value", "disappear": 123} | unset("disappear") -%}
+{{ "{{" }} object | tojson {{ "}}" }}
+```
+Will render into:
+```
+{"existing":"value"}
 ```

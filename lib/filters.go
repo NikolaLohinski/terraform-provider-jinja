@@ -15,6 +15,8 @@ import (
 var Filters = exec.FilterSet{
 	"ifelse":   filterIfElse,
 	"get":      filterGet,
+	"insert":   filterInsert,
+	"unset":    filterUnset,
 	"values":   filterValues,
 	"keys":     filterKeys,
 	"try":      filterTry,
@@ -23,6 +25,8 @@ var Filters = exec.FilterSet{
 	"concat":   filterConcat,
 	"split":    filterSplit,
 	"add":      filterAdd,
+	"append":   filterAppend,
+	"flatten":  filterFlatten,
 	"fail":     filterFail,
 }
 
@@ -203,38 +207,13 @@ func filterAdd(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Va
 	if in.IsError() {
 		return in
 	}
+
 	if in.IsList() {
-		p := params.ExpectArgs(1)
-		if p.IsError() {
-			return exec.AsValue(errors.Wrap(p, "Wrong signature for 'add' on list type"))
-		}
-		newItem := p.First()
-
-		out := make([]*exec.Value, 0)
-		in.Iterate(func(idx, count int, item, _ *exec.Value) bool {
-			out = append(out, item)
-			return true
-		}, func() {})
-		out = append(out, newItem)
-
-		return exec.AsValue(out)
+		return filterAppend(e, in, params)
 	}
 
 	if in.IsDict() {
-		p := params.ExpectArgs(2)
-		if p.IsError() || len(p.Args) != 2 {
-			return exec.AsValue(errors.Wrap(p, "Wrong signature for 'add' on dict type"))
-		}
-		newKey := p.Args[0]
-		newValue := p.Args[1]
-
-		out := make(map[string]interface{})
-		in.Iterate(func(idx, count int, key, value *exec.Value) bool {
-			out[key.String()] = value.Interface()
-			return true
-		}, func() {})
-		out[newKey.String()] = newValue.Interface()
-		return exec.AsValue(out)
+		return filterInsert(e, in, params)
 	}
 
 	return exec.AsValue(errors.New("Filter 'add' was passed a non-dict nor list type"))
@@ -249,4 +228,104 @@ func filterFail(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.V
 	}
 
 	return exec.AsValue(errors.New(in.String()))
+}
+
+func filterInsert(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	if in.IsError() {
+		return in
+	}
+	if !in.IsDict() {
+		return exec.AsValue(errors.New("Filter 'set' was passed a non-dict type"))
+	}
+	p := params.ExpectArgs(2)
+	if p.IsError() || len(p.Args) != 2 {
+		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'set'"))
+	}
+	newKey := p.Args[0]
+	newValue := p.Args[1]
+
+	out := make(map[string]interface{})
+	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
+		out[key.String()] = value.Interface()
+		return true
+	}, func() {})
+	out[newKey.String()] = newValue.Interface()
+	return exec.AsValue(out)
+}
+
+func filterUnset(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	if in.IsError() {
+		return in
+	}
+	if !in.IsDict() {
+		return exec.AsValue(errors.New("Filter 'unset' was passed a non-dict type"))
+	}
+	p := params.ExpectArgs(1)
+	if p.IsError() || len(p.Args) != 1 {
+		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'unset'"))
+	}
+	toRemove := p.Args[0]
+
+	out := make(map[string]interface{})
+	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
+		if key.String() == toRemove.String() {
+			return true
+		}
+		out[key.String()] = value.Interface()
+		return true
+	}, func() {})
+
+	return exec.AsValue(out)
+}
+
+func filterAppend(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	if in.IsError() {
+		return in
+	}
+	if !in.IsList() {
+		return exec.AsValue(errors.New("Filter 'append' was passed a non-list type"))
+	}
+
+	p := params.ExpectArgs(1)
+	if p.IsError() {
+		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'append' on list type"))
+	}
+	newItem := p.First()
+
+	out := make([]*exec.Value, 0)
+	in.Iterate(func(idx, count int, item, _ *exec.Value) bool {
+		out = append(out, item)
+		return true
+	}, func() {})
+	out = append(out, newItem)
+
+	return exec.AsValue(out)
+}
+
+func filterFlatten(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	if in.IsError() {
+		return in
+	}
+	if !in.IsList() {
+		return exec.AsValue(errors.New("Filter 'append' was passed a non-list type"))
+	}
+
+	if p := params.ExpectNothing(); p.IsError() {
+		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'flatten' on list type"))
+	}
+
+	out := make([]*exec.Value, 0)
+	in.Iterate(func(_, _ int, item, _ *exec.Value) bool {
+		if !item.IsList() {
+			out = append(out, item)
+		} else {
+			item.Iterate(func(_, _ int, subItem, _ *exec.Value) bool {
+				out = append(out, subItem)
+				return true
+			}, func() {})
+		}
+		return true
+	}, func() {})
+
+	return exec.AsValue(out)
 }
