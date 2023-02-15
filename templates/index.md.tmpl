@@ -61,6 +61,11 @@ Will render into:
 toe
 ```
 
+The filter has the following keyword attributes:
+
+- `strict`: a boolean to fail if the key is missing from the map. Defaults to `False` ;
+- `default`: any value to pass as default if the key is not found. This takes precedence over the `strict` attribute if defined. Defaults to nil value ;
+
 ### The `values` filter
 
 The `values` filter is meant to get the values of a map as a list:

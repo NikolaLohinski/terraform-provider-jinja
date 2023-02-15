@@ -27,31 +27,41 @@ var Filters = exec.FilterSet{
 }
 
 func filterIfElse(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
-	p := params.Expect(2, []*exec.KwArg{{Name: "noneValue", Default: nil}})
+	p := params.ExpectArgs(2)
 	if p.IsError() {
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'ifelse'"))
 	}
-
-	trueValue := p.Args[0].String()
-	falseValue := p.Args[1].String()
-	noneValue := p.KwArgs["noneValue"]
-
-	if in.IsNil() && !noneValue.IsNil() {
-		return exec.AsValue(noneValue)
-	} else if in.IsTrue() {
-		return exec.AsValue(trueValue)
+	if in.IsError() {
+		return in
+	}
+	if in.IsTrue() {
+		return p.Args[0]
 	} else {
-		return exec.AsValue(falseValue)
+		return p.Args[1]
 	}
 }
 
 func filterGet(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
-	p := params.ExpectArgs(1)
+	p := params.Expect(1, []*exec.KwArg{
+		{Name: "strict", Default: false},
+		{Name: "default", Default: nil},
+	})
 	if p.IsError() {
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'get'"))
 	}
+	if !in.IsDict() {
+		return exec.AsValue(errors.New("Filter 'get' was passed a non-dict type"))
+	}
 	item := p.First().String()
-	value, _ := in.Getitem(item)
+	value, ok := in.Getitem(item)
+	if !ok {
+		if fallback := p.GetKwarg("default", nil); !fallback.IsNil() {
+			return fallback
+		}
+		if p.GetKwarg("strict", false).Bool() {
+			return exec.AsValue(fmt.Errorf("item '%s' not found in: %s", item, in.String()))
+		}
+	}
 	return value
 }
 
@@ -59,9 +69,15 @@ func filterValues(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 	if p := params.ExpectNothing(); p.IsError() {
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'values'"))
 	}
+
+	if in.IsError() {
+		return in
+	}
+
 	if !in.IsDict() {
 		return exec.AsValue(errors.New("Filter 'values' was passed a non-dict type"))
 	}
+
 	out := []*exec.Value{}
 	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
 		out = append(out, value)
@@ -75,6 +91,10 @@ func filterKeys(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.V
 	if p := params.ExpectNothing(); p.IsError() {
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'keys'"))
 	}
+	if in.IsError() {
+		return in
+	}
+
 	if !in.IsDict() {
 		return exec.AsValue(errors.New("Filter 'keys' was passed a non-dict type"))
 	}
@@ -114,6 +134,9 @@ func filterFromJSON(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *ex
 	if p := params.ExpectNothing(); p.IsError() {
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'keys'"))
 	}
+	if in.IsError() {
+		return in
+	}
 	if !in.IsString() || in.String() == "" {
 		return exec.AsValue(errors.New("Filter 'fromJSON' was passed an empty or non-string type"))
 	}
@@ -130,6 +153,9 @@ func filterFromJSON(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *ex
 }
 
 func filterConcat(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	if in.IsError() {
+		return in
+	}
 	if !in.IsList() {
 		return exec.AsValue(errors.New("Filter 'concat' was passed a non-list type"))
 	}
@@ -151,6 +177,9 @@ func filterConcat(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 }
 
 func filterSplit(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	if in.IsError() {
+		return in
+	}
 	if !in.IsString() {
 		return exec.AsValue(errors.New("Filter 'split' was passed a non-string type"))
 	}
@@ -171,6 +200,9 @@ func filterSplit(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.
 }
 
 func filterAdd(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	if in.IsError() {
+		return in
+	}
 	if in.IsList() {
 		p := params.ExpectArgs(1)
 		if p.IsError() {
@@ -209,6 +241,9 @@ func filterAdd(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Va
 }
 
 func filterFail(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	if in.IsError() {
+		return exec.AsValue(fmt.Errorf("%s: %s", in.String(), in.Error()))
+	}
 	if p := params.ExpectNothing(); p.IsError() || !in.IsString() {
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'fail'"))
 	}

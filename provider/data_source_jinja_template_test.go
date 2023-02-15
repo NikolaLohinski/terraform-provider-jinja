@@ -1044,7 +1044,7 @@ func TestJinjaTemplateWithStrictUndefinedAtRootLevel(t *testing.T) {
 func TestFilterIfElse(t *testing.T) {
 	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
 	true  = {{ "foo" in "foo bar" | ifelse("yes", "no") }}
-	false = {{ "baz" in "foo bar" | ifelse("yes", "no") }}
+	false = {{ "baz" in "foo bar" | ifelse("yes", {"value": "no"}) | get("value") }}
 	`))
 	defer remove()
 
@@ -1077,6 +1077,8 @@ func TestFilterGet(t *testing.T) {
 	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
 	{%- set key = "field" -%}
 	{{- dictionary | get(key) -}}
+	{{- dictionary | get("not strict, should just print empty") -}}
+	{{- dictionary | get("with default", default=" default") -}}
 	`))
 	defer remove()
 
@@ -1098,7 +1100,7 @@ func TestFilterGet(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
 					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
-						expected := "content"
+						expected := "content default"
 						if expected != got {
 							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
 						}
@@ -1110,6 +1112,31 @@ func TestFilterGet(t *testing.T) {
 	})
 }
 
+func TestFilterGetStrict(t *testing.T) {
+	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
+	{{- dictionary | get("nope", strict=True) -}}
+	`))
+	defer remove()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProviderFactories: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: heredoc.Doc(`
+				data "jinja_template" "render" {
+					template = "` + path.Join(dir, template) + `"
+					context {
+						type = "yaml"
+						data = <<-EOF
+						dictionary: {}
+						EOF
+					}
+				}`),
+				ExpectError: regexp.MustCompile("Error: .* item 'nope' not found in: {}"),
+			},
+		},
+	})
+}
 func TestFilterValues(t *testing.T) {
 	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
 	{{- numbers | values | sort | join(" > ")  -}}
