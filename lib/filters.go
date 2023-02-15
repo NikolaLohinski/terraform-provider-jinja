@@ -1,18 +1,29 @@
 package lib
 
 import (
+	"encoding/json"
+	"fmt"
+	"strings"
+
+	"github.com/dustin/go-humanize"
 	"github.com/noirbizarre/gonja/builtins"
 	"github.com/noirbizarre/gonja/exec"
 	"github.com/pkg/errors"
+	"gopkg.in/yaml.v3"
 )
 
 var Filters = exec.FilterSet{
-	"ifelse": filterIfElse,
-	"get":    filterGet,
-	"values": filterValues,
-	"keys":   filterKeys,
-	"try":    filterTry,
-	"tojson": filterToJSON,
+	"ifelse":   filterIfElse,
+	"get":      filterGet,
+	"values":   filterValues,
+	"keys":     filterKeys,
+	"try":      filterTry,
+	"tojson":   filterToJSON,
+	"fromjson": filterFromJSON,
+	"concat":   filterConcat,
+	"split":    filterSplit,
+	"add":      filterAdd,
+	"fail":     filterFail,
 }
 
 func filterIfElse(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
@@ -97,4 +108,110 @@ func filterToJSON(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 	}
 
 	return builtins.Filters["tojson"](e, in, params)
+}
+
+func filterFromJSON(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	if p := params.ExpectNothing(); p.IsError() {
+		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'keys'"))
+	}
+	if !in.IsString() || in.String() == "" {
+		return exec.AsValue(errors.New("Filter 'fromJSON' was passed an empty or non-string type"))
+	}
+	object := new(interface{})
+	// first check if it's a JSON indeed
+	if err := json.Unmarshal([]byte(in.String()), object); err != nil {
+		return exec.AsValue(fmt.Errorf("failed to unmarshal %s: %s", in.String(), err))
+	}
+	// then use YAML because native JSON lib does not handle integers properly
+	if err := yaml.Unmarshal([]byte(in.String()), object); err != nil {
+		return exec.AsValue(fmt.Errorf("failed to unmarshal %s: %s", in.String(), err))
+	}
+	return exec.AsValue(*object)
+}
+
+func filterConcat(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	if !in.IsList() {
+		return exec.AsValue(errors.New("Filter 'concat' was passed a non-list type"))
+	}
+	out := make([]*exec.Value, 0)
+	in.Iterate(func(idx, count int, item, _ *exec.Value) bool {
+		out = append(out, item)
+		return true
+	}, func() {})
+	for index, argument := range params.Args {
+		if !argument.IsList() {
+			return exec.AsValue(fmt.Errorf("%s argument passed to filter 'concat' is not a list: %s", humanize.Ordinal(index+1), argument))
+		}
+		argument.Iterate(func(idx, count int, item, _ *exec.Value) bool {
+			out = append(out, item)
+			return true
+		}, func() {})
+	}
+	return exec.AsValue(out)
+}
+
+func filterSplit(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	if !in.IsString() {
+		return exec.AsValue(errors.New("Filter 'split' was passed a non-string type"))
+	}
+	p := params.ExpectArgs(1)
+	if p.IsError() || !p.First().IsString() {
+		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'split'"))
+	}
+	delimiter := p.First().String()
+
+	list := strings.Split(in.String(), delimiter)
+
+	out := make([]*exec.Value, len(list))
+	for index, item := range list {
+		out[index] = exec.AsValue(item)
+	}
+
+	return exec.AsValue(out)
+}
+
+func filterAdd(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	if in.IsList() {
+		p := params.ExpectArgs(1)
+		if p.IsError() {
+			return exec.AsValue(errors.Wrap(p, "Wrong signature for 'add' on list type"))
+		}
+		newItem := p.First()
+
+		out := make([]*exec.Value, 0)
+		in.Iterate(func(idx, count int, item, _ *exec.Value) bool {
+			out = append(out, item)
+			return true
+		}, func() {})
+		out = append(out, newItem)
+
+		return exec.AsValue(out)
+	}
+
+	if in.IsDict() {
+		p := params.ExpectArgs(2)
+		if p.IsError() || len(p.Args) != 2 {
+			return exec.AsValue(errors.Wrap(p, "Wrong signature for 'add' on dict type"))
+		}
+		newKey := p.Args[0]
+		newValue := p.Args[1]
+
+		out := make(map[string]interface{})
+		in.Iterate(func(idx, count int, key, value *exec.Value) bool {
+			out[key.String()] = value.Interface()
+			return true
+		}, func() {})
+		out[newKey.String()] = newValue.Interface()
+		return exec.AsValue(out)
+	}
+
+	return exec.AsValue(errors.New("Filter 'add' was passed a non-dict nor list type"))
+}
+
+func filterFail(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	if p := params.ExpectNothing(); p.IsError() || !in.IsString() {
+		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'fail'"))
+	}
+
+	return exec.AsValue(errors.New(in.String()))
 }

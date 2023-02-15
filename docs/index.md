@@ -156,3 +156,68 @@ Now you see me!
 Important notes:
 * This is useful when `strict_undefined = true` is set but you need to handle a missing key without throwing errors in a given template ;
 * The `try` filter behaves poorly if used like a function (as such `try(...)`). This is due to a limitation in the underlying Jinja engine. Therefore, it is asked of the user to prefer using the pipeline syntax with `|` to leverage this filter.
+
+### The `fail` filter
+
+The `fail` filter is meant to error out explicitly in a given place of the template.
+
+```
+{{ "error message to output" | fail }}
+```
+
+### The `fromjson` filter
+
+The `fromjson` filter is meant to parse a json string into a useable object.
+
+```
+{%- set object = "{ \"nested\": { \"field\": \"value\" } }" | fromjson -%}
+{{ object.nested.field }}
+```
+Will render into:
+```
+value
+```
+
+### The `concat` filter
+
+The `concat` filter is meant to concatenate lists together and can take any number of lists to append together.
+
+```
+{%- set array = ["one"] | concat(["two"],["three"]) -%}
+{{ array | tojson }}
+```
+Will render into:
+```
+["one","two","three"]
+```
+
+### The `split` filter
+
+The `split` filter is meant to split a string into a list of strings using a given delimiter.
+
+```
+{%- set array = "one/two/three" | split("/") -%}
+{{ array | tojson }}
+```
+Will render into:
+```
+["one","two","three"]
+```
+
+### The `add` filter
+
+The `add` filter is meant to add an item to a list or a key value pair to a dict.
+It expects only one argument when the pipeline input is a list, and two arguments
+when the pipeline input is a dict.
+
+```
+{%- set object = {"existing": "value", "overridden": 123} | add("other", true) | add("overridden", "new") -%}
+{%- set array = ["one"] | add("two") | add("three") -%}
+{{ object | tojson }}
+{{ array | tojson }}
+```
+Will render into:
+```
+{"existing":"value","other":true,"overridden":"new"}
+["one","two","three"]
+```
