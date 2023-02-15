@@ -158,8 +158,8 @@ github.com/mitchellh/mapstructure v1.5.0/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RR
 github.com/mitchellh/reflectwalk v1.0.2 h1:G2LzWKi524PWgd3mLHV8Y5k7s6XUvT0Gef6zxSIeXaQ=
 github.com/mitchellh/reflectwalk v1.0.2/go.mod h1:mSTlrgnPZtwu0c4WaC2kGObEpuNDbx0jmZXqmk4esnw=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
-github.com/nikolalohinski/gonja v0.0.0-20230104122406-ae703d91af85 h1:toQBPghsFwktY64DpuiHosdYdHNW+Kof3JlvCzI3HR8=
-github.com/nikolalohinski/gonja v0.0.0-20230104122406-ae703d91af85/go.mod h1:WboHq+I9Ck8PwKsVFJNrpiRyngXhquRSTWBGwuSWOrg=
+github.com/nikolalohinski/gonja v1.0.0 h1:Bbw0spuwUwjrZJipMboD1cf2DimjofjAY0oYusZRdsc=
+github.com/nikolalohinski/gonja v1.0.0/go.mod h1:WboHq+I9Ck8PwKsVFJNrpiRyngXhquRSTWBGwuSWOrg=
 github.com/oklog/run v1.1.0 h1:GEenZ1cK0+q0+wsJew9qUg/DyD8k3JzYsZAi5gYi2mA=
 github.com/oklog/run v1.1.0/go.mod h1:sVPdnTZT1zYwAJeCMu2Th4T21pA3FPOQRfWjQlk7DVU=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
