@@ -174,7 +174,7 @@ github.com/mitchellh/mapstructure
 # github.com/mitchellh/reflectwalk v1.0.2
 ## explicit
 github.com/mitchellh/reflectwalk
-# github.com/noirbizarre/gonja v0.0.0-20200629003239-4d051fd0be61 => github.com/nikolalohinski/gonja v1.0.0
+# github.com/noirbizarre/gonja v0.0.0-20200629003239-4d051fd0be61 => github.com/nikolalohinski/gonja v1.1.0
 ## explicit; go 1.14
 github.com/noirbizarre/gonja
 github.com/noirbizarre/gonja/builtins
@@ -211,6 +211,9 @@ github.com/vmihailenco/msgpack/v4/codes
 github.com/vmihailenco/tagparser
 github.com/vmihailenco/tagparser/internal
 github.com/vmihailenco/tagparser/internal/parser
+# github.com/yargevad/filepathx v1.0.0
+## explicit; go 1.14
+github.com/yargevad/filepathx
 # github.com/zclconf/go-cty v1.12.1
 ## explicit; go 1.18
 github.com/zclconf/go-cty/cty

@@ -254,3 +254,15 @@ Will render into:
 ```
 {"existing":"value"}
 ```
+
+### The `fileset` filter
+
+The `fileset` filter is a filesystem filter meant to be used with the `include` statement to dynamically include files.
+It supports glob patterns (using `*`) and double glob patterns (using `**`) in paths, and operates relatively to the
+folder that contains the file being rendered.
+
+```
+{% for path in "folder/*" | fileset %}
+{% include path %}
+{% endfor %}
+```

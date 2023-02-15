@@ -51,6 +51,12 @@ func mustCreateFile(args ...string) (string, string, string, func()) {
 	return path.Base(file.Name()), content, path.Dir(file.Name()), func() { os.Remove(file.Name()) }
 }
 
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
 func TestJinjaTemplateFormat(t *testing.T) {
 	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
 	{{ "Hello %s!" | format("world") }}

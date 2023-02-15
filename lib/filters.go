@@ -3,12 +3,14 @@ package lib
 import (
 	"encoding/json"
 	"fmt"
+	"path"
 	"strings"
 
 	"github.com/dustin/go-humanize"
 	"github.com/noirbizarre/gonja/builtins"
 	"github.com/noirbizarre/gonja/exec"
 	"github.com/pkg/errors"
+	"github.com/yargevad/filepathx"
 	"gopkg.in/yaml.v3"
 )
 
@@ -28,6 +30,7 @@ var Filters = exec.FilterSet{
 	"append":   filterAppend,
 	"flatten":  filterFlatten,
 	"fail":     filterFail,
+	"fileset":  filterFileset,
 }
 
 func filterIfElse(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
@@ -288,7 +291,7 @@ func filterAppend(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 
 	p := params.ExpectArgs(1)
 	if p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'append' on list type"))
+		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'append'"))
 	}
 	newItem := p.First()
 
@@ -311,7 +314,7 @@ func filterFlatten(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 	}
 
 	if p := params.ExpectNothing(); p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'flatten' on list type"))
+		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'flatten'"))
 	}
 
 	out := make([]*exec.Value, 0)
@@ -327,5 +330,29 @@ func filterFlatten(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 		return true
 	}, func() {})
 
+	return exec.AsValue(out)
+}
+
+func filterFileset(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	if in.IsError() {
+		return in
+	}
+	if !in.IsString() {
+		return exec.AsValue(errors.New("Filter 'fileset' was passed a non-string type"))
+	}
+
+	p := params.ExpectNothing()
+	if p.IsError() {
+		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'fileset'"))
+	}
+
+	base, err := e.Loader.Path(".")
+	if err != nil {
+		return exec.AsValue(fmt.Errorf("failed to resolve path %s with loader: %s", in.String(), err))
+	}
+	out, err := filepathx.Glob(path.Join(base, in.String()))
+	if err != nil {
+		return exec.AsValue(fmt.Errorf("failed to traverse %s: %s", in.String(), err))
+	}
 	return exec.AsValue(out)
 }

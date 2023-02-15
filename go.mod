@@ -9,6 +9,7 @@ require (
 	github.com/noirbizarre/gonja v0.0.0-20200629003239-4d051fd0be61
 	github.com/pkg/errors v0.9.1
 	github.com/santhosh-tekuri/jsonschema/v5 v5.1.1
+	github.com/yargevad/filepathx v1.0.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -62,4 +63,4 @@ require (
 	google.golang.org/protobuf v1.28.1 // indirect
 )
 
-replace github.com/noirbizarre/gonja v0.0.0-20200629003239-4d051fd0be61 => github.com/nikolalohinski/gonja v1.0.0
+replace github.com/noirbizarre/gonja v0.0.0-20200629003239-4d051fd0be61 => github.com/nikolalohinski/gonja v1.1.0

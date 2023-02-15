@@ -2,6 +2,7 @@ package jinja
 
 import (
 	"fmt"
+	"os"
 	"path"
 	"regexp"
 	"testing"
@@ -559,6 +560,45 @@ func TestFilterUnset(t *testing.T) {
 					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
 						expected := heredoc.Doc(`
 						{"existing":"value"}`)
+						if expected != got {
+							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+						}
+						return nil
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestFilterFileset(t *testing.T) {
+	nestedDir := path.Join(os.TempDir(), "nestedDir")
+	must(os.MkdirAll(nestedDir, os.ModePerm))
+
+	firstNested, _, _, remove_first_nested := mustCreateFile("first", "", nestedDir)
+	defer remove_first_nested()
+
+	secondNested, _, _, remove_second_nested := mustCreateFile("second", "", nestedDir)
+	defer remove_second_nested()
+
+	template, _, dir, remove_template := mustCreateFile(t.Name(), heredoc.Doc(`
+	{%- set paths = "./nestedDir/*" | fileset -%}
+	{{- paths | tojson -}}
+	`), path.Join(nestedDir, ".."))
+	defer remove_template()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProviderFactories: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: heredoc.Doc(`
+				data "jinja_template" "render" {
+					template = "` + path.Join(dir, template) + `"
+				}`),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
+					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
+						expected := `["` + dir + `/nestedDir/` + firstNested + `","` + dir + `/nestedDir/` + secondNested + `"]`
 						if expected != got {
 							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
 						}
