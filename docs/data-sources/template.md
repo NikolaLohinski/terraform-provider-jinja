@@ -42,13 +42,14 @@ data "jinja_template" "render" {
 
 ### Optional
 
-- `context` (Block List, Max: 1) Context to use while rendering the template (see [below for nested schema](#nestedblock--context))
+- `context` (Block List) Context to use while rendering the template. If multiple are passed, they are merged in order with overriding (see [below for nested schema](#nestedblock--context))
 - `delimiters` (Block List, Max: 1) Custom delimiters for the jinja engine (see [below for nested schema](#nestedblock--delimiters))
 - `footer` (String) Footer to add at the bottom of the template before rendering
 - `header` (String) Header to add at the top of the template before rendering
 - `schema` (String, Deprecated) Either inline or a path to a JSON schema to validate the context
-- `schemas` (List of String) List of either inline or paths to JSON schemas to validate one by one in order against the context
+- `schemas` (List of String, Deprecated) List of either inline or paths to JSON schemas to validate one by one in order against the context
 - `strict_undefined` (Boolean) Toggle to fail rendering on missing attribute/item
+- `validation` (Map of String) Map of either inline or paths to JSON schemas to validate one by one in order against the context
 
 ### Read-Only
 
