@@ -294,6 +294,60 @@ func TestJinjaTemplateWithContextYAML(t *testing.T) {
 	})
 }
 
+func TestJinjaTemplateWithMultipleContext(t *testing.T) {
+	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
+	The service name is {{ name }} in {{ country }}
+	{%- if flags %}
+	The flags in the file are:
+		{%- for flag in flags %}
+	- {{ flag }}
+		{%- endfor %}
+	{% endif %}
+	`))
+	defer remove()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProviderFactories: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: heredoc.Doc(`
+				data "jinja_template" "render" {
+					template = "` + path.Join(dir, template) + `"
+					context {
+						type = "yaml"
+						data = yamlencode({
+							name = "NATO"
+							country = "the US"
+							flags = [
+								"fr",
+								"us",
+							]
+						})
+					}
+					context {
+						type = "json"
+						data = jsonencode({
+							name = "overridden"
+							flags = []
+						})
+					}
+				}`),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
+					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
+						expected := heredoc.Doc(`
+						The service name is overridden in the US`)
+						if expected != got {
+							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+						}
+						return nil
+					}),
+				),
+			},
+		},
+	})
+}
+
 func TestJinjaTemplateOtherDelimitersAtProviderLevel(t *testing.T) {
 	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
 	[%- if "foo" in "foo bar" %]
@@ -448,6 +502,74 @@ func TestJinjaTemplateWithSchema(t *testing.T) {
 	})
 }
 
+func TestJinjaTemplateWithValidation(t *testing.T) {
+	schema, _, dir, remove_schema := mustCreateFile("nested", heredoc.Doc(`
+	{
+		"type": "object",
+		"required": [
+			"name",
+			"other"
+		],
+		"properties": {
+			"name": {
+				"type": "string"
+			},
+			"other": {
+				"type": "object",
+				"required": ["foo"],
+				"properties": {
+					"foo": {
+						"type": "string"
+					}
+				}
+			}
+	
+		}
+	}
+	`))
+	defer remove_schema()
+
+	template, _, _, remove_template := mustCreateFile(t.Name(), heredoc.Doc(`
+	The name field is: "{{ name }}"
+	`), dir)
+	defer remove_template()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProviderFactories: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: heredoc.Doc(`
+				data "jinja_template" "render" {
+					template = "` + path.Join(dir, template) + `"
+					context {
+						type = "yaml"
+						data = yamlencode({
+							name = "schema"
+							other = {
+								"foo" = "bar"
+							}
+						})
+					}
+					validation = {
+						test = "` + path.Join(dir, schema) + `"
+					}
+				}`),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
+					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
+						expected := heredoc.Doc(`
+						The name field is: "schema"`)
+						if expected != got {
+							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+						}
+						return nil
+					}),
+				),
+			},
+		},
+	})
+}
+
 func TestJinjaTemplateWithInlineSchema(t *testing.T) {
 	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
 	The name field is: "{{ name }}"
@@ -497,6 +619,47 @@ func TestJinjaTemplateWithInlineSchema(t *testing.T) {
 	})
 }
 
+func TestJinjaTemplateWithValidationThatFails(t *testing.T) {
+	schema, _, dir, remove_schema := mustCreateFile("nested", heredoc.Doc(`
+	{
+		"type": "object",
+		"required": [
+			"name"
+		],
+		"properties": {
+			"name": {
+				"type": "string"
+			}
+		}
+	}
+	`))
+	defer remove_schema()
+
+	template, _, _, remove_template := mustCreateFile(t.Name(), heredoc.Doc(`
+	The name field is: "{{ name }}"
+	`), dir)
+	defer remove_template()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProviderFactories: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: heredoc.Doc(`
+				data "jinja_template" "render" {
+					template = "` + path.Join(dir, template) + `"
+					context {
+						type = "yaml"
+						data = yamlencode({})
+					}
+					validation = {
+						test = "` + path.Join(dir, schema) + `"
+					}
+				}`),
+				ExpectError: regexp.MustCompile("failed to pass 'test' JSON schema validation: jsonschema: '' does not validate with .*: missing properties: 'name'"),
+			},
+		},
+	})
+}
 func TestJinjaTemplateWithSchemaThatFails(t *testing.T) {
 	schema, _, dir, remove_schema := mustCreateFile("nested", heredoc.Doc(`
 	{
@@ -531,7 +694,7 @@ func TestJinjaTemplateWithSchemaThatFails(t *testing.T) {
 					}
 					schema = "` + path.Join(dir, schema) + `"
 				}`),
-				ExpectError: regexp.MustCompile("failed to pass 1st JSON schema validation: jsonschema: '' does not validate with .*: missing properties: 'name'"),
+				ExpectError: regexp.MustCompile("failed to pass '1st' JSON schema validation: jsonschema: '' does not validate with .*: missing properties: 'name'"),
 			},
 		},
 	})
@@ -910,7 +1073,7 @@ func TestJinjaTemplateWithMultipleSchemasWhenOneIsFailing(t *testing.T) {
 						EOF
 					]
 				}`),
-				ExpectError: regexp.MustCompile("failed to pass 1st JSON schema validation: jsonschema: '/name' does not validate with .*#/properties/name/type: expected string, but got number"),
+				ExpectError: regexp.MustCompile("failed to pass '1st' JSON schema validation: jsonschema: '/name' does not validate with .*#/properties/name/type: expected string, but got number"),
 			},
 		},
 	})
@@ -975,8 +1138,8 @@ func TestJinjaTemplateWithMultipleSchemasWhenMultipleAreFailing(t *testing.T) {
 					]
 				}`),
 				ExpectError: regexp.MustCompile(heredoc.Doc(`
-				\s+failed to pass 1st JSON schema validation: jsonschema: '/name' does not validate with .*#/properties/name/type: expected string, but got number
-				\s+failed to pass 2nd JSON schema validation: jsonschema: '/other' does not validate with .*#/properties/other/type: expected object, but got string
+				\s+failed to pass '1st' JSON schema validation: jsonschema: '/name' does not validate with .*#/properties/name/type: expected string, but got number
+				\s+failed to pass '2nd' JSON schema validation: jsonschema: '/other' does not validate with .*#/properties/other/type: expected object, but got string
 				`)),
 			},
 		},

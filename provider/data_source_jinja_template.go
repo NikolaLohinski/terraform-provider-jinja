@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/dustin/go-humanize"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/nikolalohinski/terraform-provider-jinja/lib"
@@ -105,8 +106,8 @@ func dataSourceJinjaTemplate() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Description:   "Either inline or a path to a JSON schema to validate the context",
-				Deprecated:    "Deprecated in favor of the 'schemas' field",
-				ConflictsWith: []string{"schemas"},
+				Deprecated:    "Deprecated in favor of the 'validation' field",
+				ConflictsWith: []string{"schemas", "validation"},
 			},
 			"schemas": {
 				Type:        schema.TypeList,
@@ -116,13 +117,22 @@ func dataSourceJinjaTemplate() *schema.Resource {
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
-				ConflictsWith: []string{"schema"},
+				Deprecated:    "Deprecated in favor of the 'validation' field",
+				ConflictsWith: []string{"schema", "validation"},
+			},
+			"validation": {
+				Type:        schema.TypeMap,
+				Optional:    true,
+				Description: "Map of either inline or paths to JSON schemas to validate one by one in order against the context",
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+				ConflictsWith: []string{"schema", "schemas"},
 			},
 			"context": {
 				Type:        schema.TypeList,
 				Optional:    true,
-				Description: "Context to use while rendering the template",
-				MaxItems:    1,
+				Description: "Context to use while rendering the template. If multiple are passed, they are merged in order with overriding",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"type": {
@@ -201,30 +211,42 @@ func parseContext(d *schema.ResourceData, meta interface{}) (*lib.Context, error
 	}, nil
 }
 
-func parseSchemas(d *schema.ResourceData) ([]json.RawMessage, error) {
-	stringSchemas := make([]string, 0)
+func parseSchemas(d *schema.ResourceData) (map[string]json.RawMessage, error) {
+	stringSchemas := make(map[string]string)
 	if schemaField, ok := d.GetOk("schema"); ok {
-		stringSchemas = append(stringSchemas, schemaField.(string))
+		stringSchemas[humanize.Ordinal(1)] = schemaField.(string)
 	} else if schemasField, ok := d.GetOk("schemas"); ok {
 		castSchemasField, castOk := schemasField.([]interface{})
 		if !castOk {
-			return nil, fmt.Errorf("field 'schemas' is not a list: %v", schemaField)
+			return nil, fmt.Errorf("field 'schemas' is not a list: %v", schemasField)
 		}
-		for _, schema := range castSchemasField {
-			stringSchemas = append(stringSchemas, schema.(string))
+		for index, schema := range castSchemasField {
+			stringSchemas[humanize.Ordinal(index+1)] = schema.(string)
+		}
+	} else if validationField, ok := d.GetOk("validation"); ok {
+		castValidationField, ok := validationField.(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("field 'validation' is not a map of string: %v", validationField)
+		}
+		for name, field := range castValidationField {
+			castField, ok := field.(string)
+			if !ok {
+				return nil, fmt.Errorf("key '%s' in field 'validation' is not a string: %v", name, field)
+			}
+			stringSchemas[name] = castField
 		}
 	}
 
-	schemas := make([]json.RawMessage, len(stringSchemas))
-	for i, stringSchema := range stringSchemas {
+	schemas := make(map[string]json.RawMessage)
+	for name, stringSchema := range stringSchemas {
 		if _, err := os.Stat(stringSchema); err == nil {
 			content, err := ioutil.ReadFile(stringSchema)
 			if err != nil {
 				return nil, fmt.Errorf("failed to read path %s: %s", stringSchema, err)
 			}
-			schemas[i] = json.RawMessage(content)
+			schemas[name] = json.RawMessage(content)
 		} else {
-			schemas[i] = json.RawMessage(stringSchema)
+			schemas[name] = json.RawMessage(stringSchema)
 		}
 	}
 
@@ -275,33 +297,34 @@ func parseConfiguration(d *schema.ResourceData, meta interface{}) (lib.Configura
 	}, nil
 }
 
-func parseValues(d *schema.ResourceData) (*lib.Values, error) {
+func parseValues(d *schema.ResourceData) ([]lib.Values, error) {
 	context_blocks, ok := d.GetOk("context")
 	if ok {
 		contexts, ok := context_blocks.([]interface{})
 		if !ok {
 			return nil, fmt.Errorf("context blocks are invalid: %s", context_blocks)
 		}
-		if len(contexts) != 1 {
-			return nil, fmt.Errorf("context block if defined must be unique: %s", context_blocks)
-		}
-		kind := d.Get("context.0.type").(string)
-		dataField := d.Get("context.0.data")
+		values := make([]lib.Values, len(contexts))
 
-		var data []byte
-		if _, err := os.Stat(dataField.(string)); err == nil {
-			data, err = ioutil.ReadFile(dataField.(string))
-			if err != nil {
-				return nil, fmt.Errorf("failed to read path %s: %s", data, err)
+		for index := range contexts {
+			kind := d.Get(fmt.Sprintf("context.%d.type", index)).(string)
+			dataField := d.Get(fmt.Sprintf("context.%d.data", index))
+			var data []byte
+			if _, err := os.Stat(dataField.(string)); err == nil {
+				data, err = ioutil.ReadFile(dataField.(string))
+				if err != nil {
+					return nil, fmt.Errorf("failed to read path %s: %s", dataField, err)
+				}
+			} else {
+				data = []byte(dataField.(string))
 			}
-		} else {
-			data = []byte(dataField.(string))
+			values[index] = lib.Values{
+				Type: kind,
+				Data: data,
+			}
 		}
 
-		return &lib.Values{
-			Type: kind,
-			Data: data,
-		}, nil
+		return values, nil
 	}
 
 	return nil, nil

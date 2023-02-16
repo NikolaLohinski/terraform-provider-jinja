@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path"
+	"sort"
 	"strings"
 
 	"github.com/dustin/go-humanize"
+	"github.com/imdario/mergo"
 	"github.com/noirbizarre/gonja"
 	"github.com/noirbizarre/gonja/config"
 	"github.com/noirbizarre/gonja/exec"
@@ -44,28 +46,37 @@ func Render(ctx *Context) ([]byte, error) {
 	return []byte(result), err
 }
 
-func getValues(values *Values) (map[string]interface{}, error) {
-	parsedValues := make(map[string]interface{})
-	if values != nil {
-		switch strings.ToLower(values.Type) {
+func getValues(values []Values) (map[string]interface{}, error) {
+	var mergedValues map[string]interface{}
+	for index, value := range values {
+		layer := make(map[string]interface{})
+		switch strings.ToLower(value.Type) {
 		case "json":
 			// Validate JSON context format before unmarshalling with YAML decoder to avoid casting ints to floats
 			// see https://stackoverflow.com/questions/71525600/golang-json-converts-int-to-float-what-can-i-do
-			if err := json.Unmarshal(values.Data, &map[string]interface{}{}); err != nil {
+			if err := json.Unmarshal(value.Data, &map[string]interface{}{}); err != nil {
 				return nil, fmt.Errorf("failed to decode JSON context: %s", err)
 			}
-			if err := yaml.Unmarshal(values.Data, &parsedValues); err != nil {
+			if err := yaml.Unmarshal(value.Data, &layer); err != nil {
 				return nil, fmt.Errorf("failed to unmarshal JSON context: %s", err)
 			}
 		case "yaml":
-			if err := yaml.Unmarshal(values.Data, &parsedValues); err != nil {
+			if err := yaml.Unmarshal(value.Data, &layer); err != nil {
 				return nil, fmt.Errorf("failed to unmarshal YAML context: %s", err)
 			}
 		default:
-			return nil, fmt.Errorf("provided context has an unsupported type: %v", values.Type)
+			return nil, fmt.Errorf("provided context has an unsupported type: %v", value.Type)
+		}
+
+		if mergedValues == nil {
+			mergedValues = layer
+			continue
+		}
+		if err := mergo.Merge(&mergedValues, layer, mergo.WithOverride, mergo.WithOverwriteWithEmptyValue); err != nil {
+			return nil, fmt.Errorf("failed to merge %s values layer: %s", humanize.Ordinal(index+1), err)
 		}
 	}
-	return parsedValues, nil
+	return mergedValues, nil
 }
 
 func getTemplate(ctx *Context, environment *gonja.Environment) (*exec.Template, error) {
@@ -90,16 +101,25 @@ func getTemplate(ctx *Context, environment *gonja.Environment) (*exec.Template, 
 	return exec.NewTemplate(ctx.Template.Location, bundle, environment.EvalConfig)
 }
 
-func validate(values map[string]interface{}, schemas []json.RawMessage) error {
+func validate(values map[string]interface{}, schemas map[string]json.RawMessage) error {
 	schemaErrors := []string{}
-	for index, schema := range schemas {
+	names := make([]string, 0)
+	for name := range schemas {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		schema, ok := schemas[name]
+		if !ok {
+			return fmt.Errorf("could not find name '%s' in schemas: %v", name, schemas)
+		}
 		validator, err := jsonschema.CompileString("", string(schema))
 		if err != nil {
-			return fmt.Errorf("failed to compile JSON schema %s: %s", err, schema)
+			return fmt.Errorf("failed to compile '%s' JSON schema %s: %s", name, schema, err)
 		}
 
 		if err := validator.Validate(values); err != nil {
-			schemaErrors = append(schemaErrors, fmt.Errorf("failed to pass %s JSON schema validation: %s", humanize.Ordinal(index+1), err).Error())
+			schemaErrors = append(schemaErrors, fmt.Errorf("failed to pass '%s' JSON schema validation: %s", name, err).Error())
 			continue
 		}
 	}

@@ -153,6 +153,9 @@ github.com/hashicorp/terraform-svchost
 # github.com/hashicorp/yamux v0.1.1
 ## explicit; go 1.15
 github.com/hashicorp/yamux
+# github.com/imdario/mergo v0.3.12
+## explicit; go 1.13
+github.com/imdario/mergo
 # github.com/mattn/go-colorable v0.1.13
 ## explicit; go 1.15
 github.com/mattn/go-colorable

@@ -3,10 +3,10 @@ package lib
 import "encoding/json"
 
 type Context struct {
-	Template      Template          `json:"template"`
-	Configuration Configuration     `json:"configuration"`
-	Values        *Values           `json:"values,omitempty"`
-	Schemas       []json.RawMessage `json:"schemas,omitempty"`
+	Template      Template                   `json:"template"`
+	Configuration Configuration              `json:"configuration"`
+	Values        []Values                   `json:"values,omitempty"`
+	Schemas       map[string]json.RawMessage `json:"schemas,omitempty"`
 }
 type Template struct {
 	Location string `json:"location"`
