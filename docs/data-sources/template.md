@@ -54,6 +54,7 @@ data "jinja_template" "render" {
 ### Read-Only
 
 - `id` (String) The ID of this resource.
+- `merged_context` (String) JSON encoded representation of the merged context that has been applied to the template
 - `result` (String) Rendered template with the given context
 
 <a id="nestedblock--context"></a>

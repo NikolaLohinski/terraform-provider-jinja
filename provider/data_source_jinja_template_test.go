@@ -238,6 +238,13 @@ func TestJinjaTemplateWithContextJSON(t *testing.T) {
 						}
 						return nil
 					}),
+					resource.TestCheckResourceAttrWith("data.jinja_template.render", "merged_context", func(got string) error {
+						expected := heredoc.Doc(`{"integer":123,"top":{"middle":{"bottom":{"field":"surprise!"}}}}`)
+						if expected != got {
+							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+						}
+						return nil
+					}),
 				),
 			},
 		},

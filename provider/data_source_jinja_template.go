@@ -156,6 +156,11 @@ func dataSourceJinjaTemplate() *schema.Resource {
 				Computed:    true,
 				Description: "Rendered template with the given context",
 			},
+			"merged_context": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "JSON encoded representation of the merged context that has been applied to the template",
+			},
 		},
 	}
 }
@@ -166,11 +171,17 @@ func read(d *schema.ResourceData, meta interface{}) error {
 		return fmt.Errorf("failed to parse configuration passed to provider: %s", err)
 	}
 
-	result, err := lib.Render(ctx)
+	result, values, err := lib.Render(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to render context: %s", err)
 	}
-
+	merged_context, err := json.Marshal(values)
+	if err != nil {
+		return fmt.Errorf("failed to marshal merged context to JSON: %s", err)
+	}
+	if err := d.Set("merged_context", string(merged_context)); err != nil {
+		return fmt.Errorf("failed to output merged context: %s", err)
+	}
 	if err := d.Set("result", string(result)); err != nil {
 		return fmt.Errorf("failed to output result: %s", err)
 	}

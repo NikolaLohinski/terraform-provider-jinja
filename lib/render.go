@@ -18,32 +18,32 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func Render(ctx *Context) ([]byte, error) {
+func Render(ctx *Context) ([]byte, map[string]interface{}, error) {
 	environment, err := getEnvironment(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build jinja environment: %s", err)
+		return nil, nil, fmt.Errorf("failed to build jinja environment: %s", err)
 	}
 
 	template, err := getTemplate(ctx, environment)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse template: %s", err)
+		return nil, nil, fmt.Errorf("failed to parse template: %s", err)
 	}
 
 	values, err := getValues(ctx.Values)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse values: %s", err)
+		return nil, nil, fmt.Errorf("failed to parse values: %s", err)
 	}
 
 	if err := validate(values, ctx.Schemas); err != nil {
-		return nil, fmt.Errorf("failed to validate context against schema: %s", err)
+		return nil, nil, fmt.Errorf("failed to validate context against schema: %s", err)
 	}
 
 	result, err := template.Execute(values)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute template: %s", err)
+		return nil, nil, fmt.Errorf("failed to execute template: %s", err)
 	}
 
-	return []byte(result), err
+	return []byte(result), values, err
 }
 
 func getValues(values []Values) (map[string]interface{}, error) {
