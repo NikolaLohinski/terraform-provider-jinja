@@ -1250,3 +1250,23 @@ func TestJinjaTemplateWithStrictUndefinedAtRootLevel(t *testing.T) {
 		},
 	})
 }
+
+func TestJinjaWhenGonjaHangsForever(t *testing.T) {
+	template, _, dir, remove_template := mustCreateFile(t.Name(), heredoc.Doc(`
+	{{ "known bug of gonja which hangs forever if there's an unclosed string }}
+	`))
+	defer remove_template()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProviderFactories: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: heredoc.Doc(`
+				data "jinja_template" "render" {
+					template = "` + path.Join(dir, template) + `"
+				}`),
+				ExpectError: regexp.MustCompile("Error: failed to render context: rendering timed out after .*: known possible reasons for timeouts are:"),
+			},
+		},
+	})
+}

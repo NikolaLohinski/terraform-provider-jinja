@@ -7,7 +7,9 @@ import (
 	"path"
 	"sort"
 	"strings"
+	"time"
 
+	"github.com/MakeNowJust/heredoc"
 	"github.com/dustin/go-humanize"
 	"github.com/imdario/mergo"
 	"github.com/noirbizarre/gonja"
@@ -18,32 +20,62 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const defaultRenderTimeout = 5 * time.Second
+
 func Render(ctx *Context) ([]byte, map[string]interface{}, error) {
-	environment, err := getEnvironment(ctx)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to build jinja environment: %s", err)
-	}
+	channel := make(chan struct {
+		Result string
+		Values map[string]interface{}
+		Err    error
+	})
+	go func() {
+		result := struct {
+			Result string
+			Values map[string]interface{}
+			Err    error
+		}{}
+		defer func() {
+			channel <- result
+		}()
 
-	template, err := getTemplate(ctx, environment)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to parse template: %s", err)
-	}
+		environment, err := getEnvironment(ctx)
+		if err != nil {
+			result.Err = fmt.Errorf("failed to build jinja environment: %s", err)
+			return
+		}
 
-	values, err := getValues(ctx.Values)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to parse values: %s", err)
-	}
+		template, err := getTemplate(ctx, environment)
+		if err != nil {
+			result.Err = fmt.Errorf("failed to parse template: %s", err)
+			return
+		}
 
-	if err := validate(values, ctx.Schemas); err != nil {
-		return nil, nil, fmt.Errorf("failed to validate context against schema: %s", err)
-	}
+		result.Values, err = getValues(ctx.Values)
+		if err != nil {
+			result.Err = fmt.Errorf("failed to parse values: %s", err)
+			return
+		}
 
-	result, err := template.Execute(values)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to execute template: %s", err)
-	}
+		if err := validate(result.Values, ctx.Schemas); err != nil {
+			result.Err = fmt.Errorf("failed to validate context against schema: %s", err)
+			return
+		}
 
-	return []byte(result), values, err
+		result.Result, result.Err = template.Execute(result.Values)
+	}()
+	select {
+	case output := <-channel:
+		if output.Err != nil {
+			return nil, nil, fmt.Errorf("failed to execute template: %s", output.Err)
+		}
+		return []byte(output.Result), output.Values, nil
+	case <-time.After(defaultRenderTimeout):
+		return nil, nil, fmt.Errorf(heredoc.Doc(`
+			rendering timed out after %s: known possible reasons for timeouts are:
+			- an unclosed string
+			- an unclosed variable block in an included template
+		`), defaultRenderTimeout.String())
+	}
 }
 
 func getValues(values []Values) (map[string]interface{}, error) {
