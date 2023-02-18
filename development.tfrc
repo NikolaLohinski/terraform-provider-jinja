@@ -1,0 +1,5 @@
+provider_installation {
+  dev_overrides {
+    "NikolaLohinski/jinja" = "/tmp/terraform-provider-jinja"
+  }
+}

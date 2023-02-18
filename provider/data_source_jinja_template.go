@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"strings"
 
@@ -100,7 +101,7 @@ func dataSourceJinjaTemplate() *schema.Resource {
 			"template": {
 				Type:        schema.TypeString,
 				Required:    true,
-				Description: "Path to the jinja template to render",
+				Description: "Inlined or path to the jinja template to render. If the template is passed inlined, any filesystem calls such as using the `include` statement or the `fileset` filter won't work as expected.",
 			},
 			"schema": {
 				Type:          schema.TypeString,
@@ -171,6 +172,27 @@ func read(d *schema.ResourceData, meta interface{}) error {
 		return fmt.Errorf("failed to parse configuration passed to provider: %s", err)
 	}
 
+	// check if template location is not an existing file, then most likely it's an inlined template
+	if _, err := os.Stat(ctx.Template.Location); err != nil {
+		temp, err := os.CreateTemp("", "")
+		if err != nil {
+			return fmt.Errorf("failed to create temporary file to hold the inlined template: %s", err)
+		}
+		defer func() {
+			if err := os.Remove(temp.Name()); err != nil {
+				log.Printf("[ERROR] failed to remove temporary file")
+			}
+		}()
+		if _, err := temp.Write([]byte(ctx.Template.Location)); err != nil {
+			return fmt.Errorf("failed to write template to temporary file: %s", temp.Name())
+		}
+		if err := temp.Close(); err != nil {
+			return fmt.Errorf("failed to close temporary file: %s", temp.Name())
+		}
+		log.Printf("[WARN] detected inlined template: filesystem call such as the 'include' statement won't work as expected")
+		ctx.Template.Location = temp.Name()
+	}
+
 	result, values, err := lib.Render(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to render context: %s", err)
@@ -187,7 +209,7 @@ func read(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	hash_function := sha256.New()
-	hash_function.Write([]byte(result))
+	hash_function.Write(result)
 
 	d.SetId(base64.URLEncoding.EncodeToString(hash_function.Sum(nil)))
 

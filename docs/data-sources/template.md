@@ -14,7 +14,8 @@ The jinja_template data source renders a jinja template with a given template wi
 
 ```terraform
 data "jinja_template" "render" {
-  // must be a path to resolve any nested templates includes
+  // inlined or path to a template
+  // if inlined, filesystem calls won't behave as expected
   template = "${path.module}/src/template.j2"
   context {
     // either yaml or json
@@ -23,7 +24,9 @@ data "jinja_template" "render" {
     data = "${path.module}/src/context.yaml"
   }
   // is a list of either a path or inline, or both
-  schemas = ["${path.module}/src/schema.json"]
+  validation = {
+    "schema" = "${path.module}/src/schema.json"
+  }
 
   strict_undefined = false
   header           = "some macro for example"
@@ -38,7 +41,7 @@ data "jinja_template" "render" {
 
 ### Required
 
-- `template` (String) Path to the jinja template to render
+- `template` (String) Inlined or path to the jinja template to render. If the template is passed inlined, any filesystem calls such as using the `include` statement or the `fileset` filter won't work as expected.
 
 ### Optional
 

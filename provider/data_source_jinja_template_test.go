@@ -12,15 +12,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-// args:
-//   prefix [default is "tmp-"]
-//   content [default is ""]
-//   directory [default is current working directory]
-// returns:
-//   name of the file
-//   content of the file
-//   path to containing folder
-//   callable to delete the file.
+// Args:
+// - prefix [default is "tmp-"]
+// - content [default is ""]
+// - directory [default is current working directory]
+// Returns:
+// - name of the file
+// - content of the file
+// - path to containing folder
+// - callable to delete the file.
 func mustCreateFile(args ...string) (string, string, string, func()) {
 	if len(args) > 3 || len(args) == 0 {
 		panic("mustCreateFile takes up to 3 arguments: prefix, content, directory")
@@ -1286,6 +1286,36 @@ func TestJinjaWhenGonjaPanics(t *testing.T) {
 					template = "` + path.Join(dir, template) + `"
 				}`),
 				ExpectError: regexp.MustCompile("Error: failed to render context: failed to execute template: a runtime error led gonja to panic: panic filter was called"),
+			},
+		},
+	})
+}
+
+func TestJinjaTemplateInlined(t *testing.T) {
+	resource.UnitTest(t, resource.TestCase{
+		ProviderFactories: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: heredoc.Doc(`
+				data "jinja_template" "render" {
+					template = <<-EOF
+					{%- if "foo" in "foo bar" -%}
+					Look at me!
+					{% endif %}
+					EOF
+				}`),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
+					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
+						expected := heredoc.Doc(`
+						Look at me!
+						`)
+						if expected != got {
+							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+						}
+						return nil
+					}),
+				),
 			},
 		},
 	})
