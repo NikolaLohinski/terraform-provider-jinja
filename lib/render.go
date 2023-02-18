@@ -35,6 +35,15 @@ func Render(ctx *Context) ([]byte, map[string]interface{}, error) {
 			Err    error
 		}{}
 		defer func() {
+			if err := recover(); err != nil {
+				result.Err = fmt.Errorf(heredoc.Doc(`
+				a runtime error led gonja to panic: %s
+
+				Known possible reasons for gonja panic attacks are:
+				- call to the panic filter
+				- call to a non existent macro
+				`), err)
+			}
 			channel <- result
 		}()
 

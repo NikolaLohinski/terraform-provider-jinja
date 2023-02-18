@@ -1270,3 +1270,23 @@ func TestJinjaWhenGonjaHangsForever(t *testing.T) {
 		},
 	})
 }
+
+func TestJinjaWhenGonjaPanics(t *testing.T) {
+	template, _, dir, remove_template := mustCreateFile(t.Name(), heredoc.Doc(`
+	{{ nil | panic }}
+	`))
+	defer remove_template()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProviderFactories: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: heredoc.Doc(`
+				data "jinja_template" "render" {
+					template = "` + path.Join(dir, template) + `"
+				}`),
+				ExpectError: regexp.MustCompile("Error: failed to render context: failed to execute template: a runtime error led gonja to panic: panic filter was called"),
+			},
+		},
+	})
+}

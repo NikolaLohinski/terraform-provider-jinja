@@ -31,6 +31,7 @@ var Filters = exec.FilterSet{
 	"flatten":  filterFlatten,
 	"fail":     filterFail,
 	"fileset":  filterFileset,
+	"panic":    filterPanic,
 }
 
 func filterIfElse(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
@@ -355,4 +356,8 @@ func filterFileset(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 		return exec.AsValue(fmt.Errorf("failed to traverse %s: %s", in.String(), err))
 	}
 	return exec.AsValue(out)
+}
+
+func filterPanic(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	panic("panic filter was called")
 }
