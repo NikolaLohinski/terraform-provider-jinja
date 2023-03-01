@@ -230,6 +230,50 @@ func TestFilterTry(t *testing.T) {
 	})
 }
 
+func TestFilterDefault(t *testing.T) {
+	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
+	{{ foo | default("bar") }}
+	{{ data.array | default(["default" ~ "value"]) | tojson }}
+	{{ data.nested.no | default(data.array) | join("<") }}
+	`))
+	defer remove()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProviderFactories: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: heredoc.Doc(`
+				data "jinja_template" "render" {
+					template = "` + path.Join(dir, template) + `"
+					strict_undefined = true
+					context {
+						type = "yaml"
+						data = <<-EOF
+						data:
+						  nested: {}
+						  array:
+						  - one
+						  - two
+						EOF
+					}
+				}`),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
+					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
+						expected := heredoc.Doc(`
+						bar
+						["one","two"]
+						one<two`)
+						if expected != got {
+							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+						}
+						return nil
+					}),
+				),
+			},
+		},
+	})
+}
 func TestFilterToJSON(t *testing.T) {
 	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
 	{{ data | keys | tojson }}

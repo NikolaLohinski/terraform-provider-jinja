@@ -22,7 +22,6 @@ var Filters = exec.FilterSet{
 	"values":   filterValues,
 	"keys":     filterKeys,
 	"try":      filterTry,
-	"tojson":   filterToJSON,
 	"fromjson": filterFromJSON,
 	"concat":   filterConcat,
 	"split":    filterSplit,
@@ -32,6 +31,10 @@ var Filters = exec.FilterSet{
 	"fail":     filterFail,
 	"fileset":  filterFileset,
 	"panic":    filterPanic,
+	// Monkeypatched/fixed native gonja filters
+	"tojson":  filterToJSON,
+	"default": filterDefault,
+	"d":       filterDefault,
 }
 
 func filterIfElse(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
@@ -360,4 +363,15 @@ func filterFileset(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 
 func filterPanic(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
 	panic("panic filter was called")
+}
+
+func filterDefault(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	p := params.ExpectArgs(1)
+	if p.IsError() {
+		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'default'"))
+	}
+	if in.IsError() || in.IsNil() || (in.IsBool() && !in.IsTrue()) {
+		return p.First()
+	}
+	return in
 }
