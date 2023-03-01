@@ -368,6 +368,7 @@ func TestFilterSplit(t *testing.T) {
 	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
 	{%- set path = "one/two/three" | split("/") -%}
 	{{ path | tojson }}
+	{{ path | last }}
 	`))
 	defer remove()
 
@@ -383,7 +384,8 @@ func TestFilterSplit(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
 					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
 						expected := heredoc.Doc(`
-						["one","two","three"]`)
+						["one","two","three"]
+						three`)
 						if expected != got {
 							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
 						}

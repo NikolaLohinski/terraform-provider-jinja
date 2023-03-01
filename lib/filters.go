@@ -199,9 +199,9 @@ func filterSplit(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.
 
 	list := strings.Split(in.String(), delimiter)
 
-	out := make([]*exec.Value, len(list))
+	out := make([]interface{}, len(list))
 	for index, item := range list {
-		out[index] = exec.AsValue(item)
+		out[index] = item
 	}
 
 	return exec.AsValue(out)
