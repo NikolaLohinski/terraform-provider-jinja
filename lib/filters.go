@@ -89,7 +89,7 @@ func filterValues(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 		return exec.AsValue(errors.New("Filter 'values' was passed a non-dict type"))
 	}
 
-	out := []*exec.Value{}
+	out := make([]interface{}, 0)
 	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
 		out = append(out, value)
 		return true
@@ -109,7 +109,7 @@ func filterKeys(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.V
 	if !in.IsDict() {
 		return exec.AsValue(errors.New("Filter 'keys' was passed a non-dict type"))
 	}
-	out := []*exec.Value{}
+	out := make([]interface{}, 0)
 	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
 		out = append(out, key)
 		return true
@@ -170,7 +170,7 @@ func filterConcat(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 	if !in.IsList() {
 		return exec.AsValue(errors.New("Filter 'concat' was passed a non-list type"))
 	}
-	out := make([]*exec.Value, 0)
+	out := make([]interface{}, 0)
 	in.Iterate(func(idx, count int, item, _ *exec.Value) bool {
 		out = append(out, item)
 		return true
@@ -299,7 +299,7 @@ func filterAppend(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 	}
 	newItem := p.First()
 
-	out := make([]*exec.Value, 0)
+	out := make([]interface{}, 0)
 	in.Iterate(func(idx, count int, item, _ *exec.Value) bool {
 		out = append(out, item)
 		return true
@@ -321,7 +321,7 @@ func filterFlatten(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'flatten'"))
 	}
 
-	out := make([]*exec.Value, 0)
+	out := make([]interface{}, 0)
 	in.Iterate(func(_, _ int, item, _ *exec.Value) bool {
 		if !item.IsList() {
 			out = append(out, item)
