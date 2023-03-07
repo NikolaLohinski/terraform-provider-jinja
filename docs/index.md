@@ -60,7 +60,7 @@ Finally, the JSON schema validation engine is based on [the `jsonschema` Golang 
 
 The following sections describe additional features that have been added to improve the developer experience.
 
-### The `ifelse` filter
+## The `ifelse` filter
 
 The `ifelse` filter is meant to perform ternary conditions as follows:
 
@@ -74,7 +74,7 @@ true is yes
 false is no
 ```
 
-### The `get` filter
+## The `get` filter
 
 The `get` filter helps getting an item in a map with a dynamic key:
 
@@ -97,7 +97,7 @@ The filter has the following keyword attributes:
 - `strict`: a boolean to fail if the key is missing from the map. Defaults to `False` ;
 - `default`: any value to pass as default if the key is not found. This takes precedence over the `strict` attribute if defined. Defaults to nil value ;
 
-### The `values` filter
+## The `values` filter
 
 The `values` filter is meant to get the values of a map as a list:
 
@@ -118,7 +118,7 @@ Will render into:
 
 Note that the order of values is not guaranteed as there is no ordering in Golang maps.
 
-### The `keys` filter
+## The `keys` filter
 
 The `keys` filter is meant to get the keys of a map as a list:
 
@@ -139,7 +139,7 @@ a > b > c
 
 Note that the order of keys is not guaranteed as there is no ordering in Golang maps.
 
-### The `try` filter
+## The `try` filter
 
 The `try` filter is meant to gracefully evaluate an expression. It returns an `undefined` value if the passed expression is undefined or throws an error. Otherwise, it returns the value passed in the context of the pipeline.
 
@@ -162,7 +162,7 @@ Important notes:
 * This is useful when `strict_undefined = true` is set but you need to handle a missing key without throwing errors in a given template ;
 * The `try` filter behaves poorly if used like a function (as such `try(...)`). This is due to a limitation in the underlying Jinja engine. Therefore, it is asked of the user to prefer using the pipeline syntax with `|` to leverage this filter.
 
-### The `fail` filter
+## The `fail` filter
 
 The `fail` filter is meant to error out explicitly in a given place of the template.
 
@@ -170,9 +170,9 @@ The `fail` filter is meant to error out explicitly in a given place of the templ
 {{ "error message to output" | fail }}
 ```
 
-### The `fromjson` filter
+## The `fromjson` filter
 
-The `fromjson` filter is meant to parse a json string into a useable object.
+The `fromjson` filter is meant to parse a JSON string into a useable object.
 
 ```
 {%- set object = "{ \"nested\": { \"field\": \"value\" } }" | fromjson -%}
@@ -183,7 +183,35 @@ Will render into:
 value
 ```
 
-### The `concat` filter
+## The `fromyaml` filter
+
+The `fromyaml` filter is meant to parse a YAML string into a useable object.
+
+```
+{%- set object = "nested:\n  field: value\n" | fromyaml -%}
+{{ object.nested.field }}
+```
+Will render into:
+```
+value
+```
+
+## The `toyaml` filter
+
+The `toyaml` filter is meant to render a given object as YAML. It takes an optional argument called `indent` to
+specify the indentation to apply to the result, which defaults to `2` spaces.
+
+```
+{%- set object = "{ \"nested\": { \"field\": \"value\" } }" | fromjson -%}
+{{ object | toyaml }}
+```
+Will render into:
+```
+nested:
+  field: value
+```
+
+## The `concat` filter
 
 The `concat` filter is meant to concatenate lists together and can take any number of lists to append together.
 
@@ -196,7 +224,7 @@ Will render into:
 ["one","two","three"]
 ```
 
-### The `split` filter
+## The `split` filter
 
 The `split` filter is meant to split a string into a list of strings using a given delimiter.
 
@@ -209,7 +237,7 @@ Will render into:
 ["one","two","three"]
 ```
 
-### The `flatten` filter
+## The `flatten` filter
 
 The `flatten` filter is meant to reduce a list of lists to a list of the underlying elements.
 
@@ -242,7 +270,7 @@ Will render into:
 ["one","two","three"]
 ```
 
-### The `unset` filter
+## The `unset` filter
 
 The `unset` filter is meant to remove a key/value pair from a dict.
 
@@ -255,7 +283,7 @@ Will render into:
 {"existing":"value"}
 ```
 
-### The `fileset` filter
+## The `fileset` filter
 
 The `fileset` filter is a filesystem filter meant to be used with the `include` statement to dynamically include files.
 It supports glob patterns (using `*`) and double glob patterns (using `**`) in paths, and operates relatively to the
@@ -265,4 +293,29 @@ folder that contains the file being rendered.
 {% for path in "folder/*" | fileset %}
 {% include path %}
 {% endfor %}
+```
+
+## The `basename` filter
+
+The `basename` filter is meant to be used with filesystem paths to retrieve the last element, which is usually the file name or
+the folder name.
+
+```
+{{ "one/two/three" | basename }}
+```
+Will render into:
+```
+three
+```
+
+## The `dir` filter
+
+The `dir` filter is meant to be used with filesytem paths to retrieve the path to the containing folder.
+
+```
+{{ "one/two/three" | dir }}
+```
+Will render into:
+```
+one/two
 ```
