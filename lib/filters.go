@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/dustin/go-humanize"
@@ -31,6 +32,8 @@ var Filters = exec.FilterSet{
 	"flatten":  filterFlatten,
 	"fail":     filterFail,
 	"fileset":  filterFileset,
+	"basename": filterBasename,
+	"dir":      filterDir,
 	"panic":    filterPanic,
 	"toyaml":   filterToYAML,
 	"fromyaml": filterFromYAML,
@@ -362,6 +365,38 @@ func filterFileset(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 		return exec.AsValue(fmt.Errorf("failed to traverse %s: %s", in.String(), err))
 	}
 	return exec.AsValue(out)
+}
+
+func filterBasename(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	if in.IsError() {
+		return in
+	}
+	if !in.IsString() {
+		return exec.AsValue(errors.New("Filter 'basename' was passed a non-string type"))
+	}
+
+	p := params.ExpectNothing()
+	if p.IsError() {
+		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'basename'"))
+	}
+
+	return exec.AsValue(filepath.Base(in.String()))
+}
+
+func filterDir(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	if in.IsError() {
+		return in
+	}
+	if !in.IsString() {
+		return exec.AsValue(errors.New("Filter 'dir' was passed a non-string type"))
+	}
+
+	p := params.ExpectNothing()
+	if p.IsError() {
+		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'dir'"))
+	}
+
+	return exec.AsValue(filepath.Dir(in.String()))
 }
 
 func filterPanic(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
