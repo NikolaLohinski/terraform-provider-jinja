@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"path"
@@ -31,6 +32,8 @@ var Filters = exec.FilterSet{
 	"fail":     filterFail,
 	"fileset":  filterFileset,
 	"panic":    filterPanic,
+	"toyaml":   filterToYAML,
+	"fromyaml": filterFromYAML,
 	// Monkeypatched/fixed native gonja filters
 	"tojson":  filterToJSON,
 	"default": filterDefault,
@@ -374,4 +377,64 @@ func filterDefault(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 		return p.First()
 	}
 	return in
+}
+
+func filterFromYAML(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	if p := params.ExpectNothing(); p.IsError() {
+		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'fromyaml'"))
+	}
+	if in.IsError() {
+		return in
+	}
+	if !in.IsString() || in.String() == "" {
+		return exec.AsValue(errors.New("Filter 'fromyaml' was passed an empty or non-string type"))
+	}
+	object := new(interface{})
+	if err := yaml.Unmarshal([]byte(in.String()), object); err != nil {
+		return exec.AsValue(fmt.Errorf("failed to unmarshal %s: %s", in.String(), err))
+	}
+	return exec.AsValue(*object)
+}
+
+func filterToYAML(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	const defaultIndent = 2
+
+	p := params.Expect(0, []*exec.KwArg{{Name: "indent", Default: defaultIndent}})
+	if p.IsError() {
+		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'toyaml'"))
+	}
+	if in.IsError() {
+		return in
+	}
+
+	indent, ok := p.KwArgs["indent"]
+	if !ok || indent.IsNil() {
+		indent = exec.AsValue(defaultIndent)
+	}
+
+	if !indent.IsInteger() {
+		return exec.AsValue(errors.Errorf("Expected an integer for 'indent', got %s", indent.String()))
+	}
+	if in.IsNil() {
+		return exec.AsValue(errors.New("Filter 'toyaml' was called with a nil object"))
+	}
+	output := bytes.NewBuffer(nil)
+	encoder := yaml.NewEncoder(output)
+	encoder.SetIndent(indent.Integer())
+
+	// Monkey patching because the pipeline input parser is broken when the input is a list
+	if in.IsList() {
+		inCast := make([]interface{}, in.Len())
+		for index := range inCast {
+			item := exec.ToValue(in.Index(index).Val)
+			inCast[index] = item.Val.Interface()
+		}
+		in = exec.AsValue(inCast)
+	}
+
+	if err := encoder.Encode(in.Interface()); err != nil {
+		return exec.AsValue(fmt.Errorf("unable to marshal to yaml: %s: %s", in.String(), err))
+	}
+
+	return exec.AsValue(output.String())
 }
