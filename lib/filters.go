@@ -143,13 +143,13 @@ func filterToJSON(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 
 func filterFromJSON(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
 	if p := params.ExpectNothing(); p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'keys'"))
+		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'fromjson'"))
 	}
 	if in.IsError() {
 		return in
 	}
 	if !in.IsString() || in.String() == "" {
-		return exec.AsValue(errors.New("Filter 'fromJSON' was passed an empty or non-string type"))
+		return exec.AsValue(errors.New("Filter 'fromjson' was passed an empty or non-string type"))
 	}
 	object := new(interface{})
 	// first check if it's a JSON indeed
@@ -242,11 +242,11 @@ func filterInsert(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 		return in
 	}
 	if !in.IsDict() {
-		return exec.AsValue(errors.New("Filter 'set' was passed a non-dict type"))
+		return exec.AsValue(errors.New("Filter 'insert' was passed a non-dict type"))
 	}
 	p := params.ExpectArgs(2)
 	if p.IsError() || len(p.Args) != 2 {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'set'"))
+		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'insert'"))
 	}
 	newKey := p.Args[0]
 	newValue := p.Args[1]
@@ -314,7 +314,7 @@ func filterFlatten(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 		return in
 	}
 	if !in.IsList() {
-		return exec.AsValue(errors.New("Filter 'append' was passed a non-list type"))
+		return exec.AsValue(errors.New("Filter 'flatten' was passed a non-list type"))
 	}
 
 	if p := params.ExpectNothing(); p.IsError() {
