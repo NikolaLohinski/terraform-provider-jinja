@@ -134,6 +134,10 @@ func filterTry(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Va
 }
 
 func filterToJSON(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	// Done not mess around with trying to marshall error pipelines
+	if in.IsError() {
+		return in
+	}
 	// Monkey patching because the builtin json filter is broken for arrays
 	if in.IsList() {
 		inCast := make([]interface{}, in.Len())

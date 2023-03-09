@@ -325,6 +325,24 @@ func TestFilterToJSON(t *testing.T) {
 		},
 	})
 }
+func TestFilterToJSONOnError(t *testing.T) {
+	template, _, dir, remove := mustCreateFile(t.Name(), `{{ nope | tojson }}`)
+	defer remove()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProviderFactories: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: heredoc.Doc(`
+				data "jinja_template" "render" {
+					template = "` + path.Join(dir, template) + `"
+					strict_undefined = true
+				}`),
+				ExpectError: regexp.MustCompile(`Error: .* Unable to evaluate name "nope"`),
+			},
+		},
+	})
+}
 
 func TestFilterFromJSON(t *testing.T) {
 	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
