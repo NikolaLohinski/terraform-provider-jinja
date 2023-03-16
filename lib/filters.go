@@ -97,7 +97,7 @@ func filterValues(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 
 	out := make([]interface{}, 0)
 	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
-		out = append(out, value)
+		out = append(out, value.Interface())
 		return true
 	}, func() {})
 
@@ -117,7 +117,7 @@ func filterKeys(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.V
 	}
 	out := make([]interface{}, 0)
 	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
-		out = append(out, key)
+		out = append(out, key.Interface())
 		return true
 	}, func() {})
 	return exec.AsValue(out)
@@ -182,7 +182,7 @@ func filterConcat(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 	}
 	out := make([]interface{}, 0)
 	in.Iterate(func(idx, count int, item, _ *exec.Value) bool {
-		out = append(out, item)
+		out = append(out, item.Interface())
 		return true
 	}, func() {})
 	for index, argument := range params.Args {
@@ -190,7 +190,7 @@ func filterConcat(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 			return exec.AsValue(fmt.Errorf("%s argument passed to filter 'concat' is not a list: %s", humanize.Ordinal(index+1), argument))
 		}
 		argument.Iterate(func(idx, count int, item, _ *exec.Value) bool {
-			out = append(out, item)
+			out = append(out, item.Interface())
 			return true
 		}, func() {})
 	}
@@ -311,7 +311,7 @@ func filterAppend(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 
 	out := make([]interface{}, 0)
 	in.Iterate(func(idx, count int, item, _ *exec.Value) bool {
-		out = append(out, item)
+		out = append(out, item.Interface())
 		return true
 	}, func() {})
 	out = append(out, newItem)
@@ -334,10 +334,10 @@ func filterFlatten(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 	out := make([]interface{}, 0)
 	in.Iterate(func(_, _ int, item, _ *exec.Value) bool {
 		if !item.IsList() {
-			out = append(out, item)
+			out = append(out, item.Interface())
 		} else {
 			item.Iterate(func(_, _ int, subItem, _ *exec.Value) bool {
-				out = append(out, subItem)
+				out = append(out, subItem.Interface())
 				return true
 			}, func() {})
 		}

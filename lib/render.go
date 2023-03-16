@@ -42,6 +42,7 @@ func Render(ctx *Context) ([]byte, map[string]interface{}, error) {
 				Known possible reasons for gonja panic attacks are:
 				- call to the panic filter
 				- call to a non existent macro
+				- trying to do python-like object indexing using something like 'object["key"]'
 				`), err)
 			}
 			channel <- result

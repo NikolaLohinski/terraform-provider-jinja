@@ -109,7 +109,8 @@ func TestFilterGetStrict(t *testing.T) {
 }
 func TestFilterValues(t *testing.T) {
 	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
-	{{- numbers | values | sort | join(" > ")  -}}
+	{{ numbers | values | sort | join(" > ") }}
+	{{ names.first in (numbers | values) | lower }}
 	`))
 	defer remove()
 
@@ -126,13 +127,17 @@ func TestFilterValues(t *testing.T) {
 						numbers:
 						  one: 1
 						  two: 2
+						names:
+						  first: 1
 						EOF
 					}
 				}`),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
 					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
-						expected := "1 > 2"
+						expected := heredoc.Doc(`
+							1 > 2
+							true`)
 						if expected != got {
 							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
 						}
