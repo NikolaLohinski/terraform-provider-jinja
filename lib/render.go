@@ -192,9 +192,5 @@ func getEnvironment(ctx *Context) (*gonja.Environment, error) {
 
 	environment := gonja.NewEnvironment(gonjaConfig, loader)
 
-	for name, filter := range Filters {
-		environment.Filters.Update(exec.FilterSet{name: filter})
-	}
-
 	return environment, nil
 }
