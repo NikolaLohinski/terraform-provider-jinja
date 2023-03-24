@@ -11,6 +11,33 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
+func TestFilterFormat(t *testing.T) {
+	template, _, dir, remove := mustCreateFile(t.Name(), `{{ "Hello %s!" | format("world") }}`)
+	defer remove()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProviderFactories: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: heredoc.Doc(`
+				data "jinja_template" "render" {
+					template = "` + path.Join(dir, template) + `"
+				}`),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
+					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
+						expected := `Hello world!`
+						if expected != got {
+							return fmt.Errorf("\nexpected:\n%#v\ngot:\n%#v", expected, got)
+						}
+						return nil
+					}),
+				),
+			},
+		},
+	})
+}
+
 func TestFilterIfElse(t *testing.T) {
 	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
 	true  = {{ "foo" in "foo bar" | ifelse("yes", "no") }}
@@ -31,9 +58,10 @@ func TestFilterIfElse(t *testing.T) {
 					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
 						expected := heredoc.Doc(`
 						true  = yes
-						false = no`)
+						false = no
+						`)
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -72,7 +100,7 @@ func TestFilterGet(t *testing.T) {
 					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
 						expected := "content default"
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -137,9 +165,10 @@ func TestFilterValues(t *testing.T) {
 					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
 						expected := heredoc.Doc(`
 							1 > 2
-							true`)
+							true
+						`)
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -176,7 +205,7 @@ func TestFilterKeys(t *testing.T) {
 					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
 						expected := "a > b"
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -223,9 +252,10 @@ func TestFilterTry(t *testing.T) {
 						expected := heredoc.Doc(`
 
 						Now you see me without errors!
-						You should see this: "value"`)
+						You should see this: "value"
+						`)
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -268,9 +298,10 @@ func TestFilterDefault(t *testing.T) {
 						expected := heredoc.Doc(`
 						bar
 						["one","two"]
-						one<two`)
+						one<two
+						`)
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -319,9 +350,10 @@ func TestFilterToJSON(t *testing.T) {
 						["one","two"]
 						{
 						  "other": "two"
-						}`)
+						}
+						`)
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -385,9 +417,10 @@ func TestFilterFromJSON(t *testing.T) {
 						expected := heredoc.Doc(`
 						one
 						["item"]
-						123`)
+						123
+						`)
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -419,9 +452,10 @@ func TestFilterConcat(t *testing.T) {
 					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
 						expected := heredoc.Doc(`
 						["one"]
-						["one","two","three"]`)
+						["one","two","three"]
+						`)
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -452,9 +486,10 @@ func TestFilterSplit(t *testing.T) {
 					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
 						expected := heredoc.Doc(`
 						["one","two","three"]
-						three`)
+						three
+						`)
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -486,9 +521,10 @@ func TestFilterAdd(t *testing.T) {
 					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
 						expected := heredoc.Doc(`
 						{"existing":"value","other":true,"overridden":"new"}
-						["one","two","three"]`)
+						["one","two","three"]
+						`)
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -537,9 +573,10 @@ func TestFilterInsert(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
 					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
 						expected := heredoc.Doc(`
-						{"existing":"value","other":true,"overridden":"new"}`)
+						{"existing":"value","other":true,"overridden":"new"}
+						`)
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -568,9 +605,10 @@ func TestFilterAppend(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
 					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
 						expected := heredoc.Doc(`
-						["one","two","three"]`)
+						["one","two","three"]
+						`)
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -598,9 +636,10 @@ func TestFilterFlatten(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
 					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
 						expected := heredoc.Doc(`
-						["one","two","three"]`)
+						["one","two","three"]
+						`)
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -628,9 +667,10 @@ func TestFilterUnset(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
 					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
 						expected := heredoc.Doc(`
-						{"existing":"value"}`)
+						{"existing":"value"}
+						`)
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -669,7 +709,7 @@ func TestFilterFileset(t *testing.T) {
 					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
 						expected := `["` + dir + `/nestedDir/` + firstNested + `","` + dir + `/nestedDir/` + secondNested + `"]`
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -743,9 +783,10 @@ func TestFilterToYAML(t *testing.T) {
 						---
 						other:
 						    nested: two
+
 						`)
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -789,9 +830,10 @@ func TestFilterFromYAML(t *testing.T) {
 						expected := heredoc.Doc(`
 						one
 						["item"]
-						123`)
+						123
+						`)
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -818,7 +860,7 @@ func TestFilterBasename(t *testing.T) {
 					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
 						expected := "base"
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -845,7 +887,7 @@ func TestFilterDir(t *testing.T) {
 					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
 						expected := "test/folder"
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),

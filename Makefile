@@ -18,4 +18,7 @@ test:
 example: install
 	TF_CLI_CONFIG_FILE=$(PWD)/development.tfrc terraform -chdir=$(PWD)/examples apply
 
-.PHONY: build install lint fmt test
+docs:
+	tfplugindocs generate
+
+.PHONY: build install lint fmt test docs

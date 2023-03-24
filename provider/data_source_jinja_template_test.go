@@ -57,36 +57,6 @@ func must(err error) {
 	}
 }
 
-func TestJinjaTemplateFormat(t *testing.T) {
-	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
-	{{ "Hello %s!" | format("world") }}
-	`))
-	defer remove()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProviderFactories: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: heredoc.Doc(`
-				data "jinja_template" "render" {
-					template = "` + path.Join(dir, template) + `"
-				}`),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
-					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
-						expected := heredoc.Doc(`
-						Hello world!`)
-						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
-						}
-						return nil
-					}),
-				),
-			},
-		},
-	})
-}
-
 func TestJinjaTemplateSimple(t *testing.T) {
 	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
 	{% if "foo" in "foo bar" %}
@@ -109,9 +79,10 @@ func TestJinjaTemplateSimple(t *testing.T) {
 						expected := heredoc.Doc(`
 
 						show within loop!
+
 						`)
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -127,9 +98,7 @@ func TestJinjaTemplateWithInclude(t *testing.T) {
 	`))
 	defer remove_nested()
 
-	template, _, _, remove_template := mustCreateFile(t.Name(), heredoc.Doc(`
-	{% include "`+nested+`" %}
-	`), dir)
+	template, _, _, remove_template := mustCreateFile(t.Name(), `{% include "`+nested+`" %}`, dir)
 	defer remove_template()
 
 	resource.UnitTest(t, resource.TestCase{
@@ -144,7 +113,7 @@ func TestJinjaTemplateWithInclude(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
 					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -187,9 +156,10 @@ func TestJinjaTemplateOtherDelimiters(t *testing.T) {
 
 						I am cornered
 						but pointy
+
 						`)
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -232,16 +202,17 @@ func TestJinjaTemplateWithContextJSON(t *testing.T) {
 					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
 						expected := heredoc.Doc(`
 						This is a very nested surprise!
-						And this is an integer: 123`)
+						And this is an integer: 123
+						`)
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
 					resource.TestCheckResourceAttrWith("data.jinja_template.render", "merged_context", func(got string) error {
 						expected := heredoc.Doc(`{"integer":123,"top":{"middle":{"bottom":{"field":"surprise!"}}}}`)
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -289,9 +260,10 @@ func TestJinjaTemplateWithContextYAML(t *testing.T) {
 						The flags in the file are:
 						- fr
 						- us
+
 						`)
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -343,9 +315,10 @@ func TestJinjaTemplateWithMultipleContext(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
 					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
 						expected := heredoc.Doc(`
-						The service name is overridden in the US`)
+						The service name is overridden in the US
+						`)
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -392,9 +365,10 @@ func TestJinjaTemplateOtherDelimitersAtProviderLevel(t *testing.T) {
 
 						I am cornered
 						but pointy
+
 						`)
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -431,9 +405,10 @@ func TestJinjaTemplateWithPathContext(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
 					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
 						expected := heredoc.Doc(`
-						The name field is: "remote-context"`)
+						The name field is: "remote-context"
+						`)
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -470,9 +445,7 @@ func TestJinjaTemplateWithSchema(t *testing.T) {
 	`))
 	defer remove_schema()
 
-	template, _, _, remove_template := mustCreateFile(t.Name(), heredoc.Doc(`
-	The name field is: "{{ name }}"
-	`), dir)
+	template, _, _, remove_template := mustCreateFile(t.Name(), `The name field is: "{{ name }}"`, dir)
 	defer remove_template()
 
 	resource.UnitTest(t, resource.TestCase{
@@ -496,10 +469,9 @@ func TestJinjaTemplateWithSchema(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
 					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
-						expected := heredoc.Doc(`
-						The name field is: "schema"`)
+						expected := `The name field is: "schema"`
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -536,9 +508,7 @@ func TestJinjaTemplateWithValidation(t *testing.T) {
 	`))
 	defer remove_schema()
 
-	template, _, _, remove_template := mustCreateFile(t.Name(), heredoc.Doc(`
-	The name field is: "{{ name }}"
-	`), dir)
+	template, _, _, remove_template := mustCreateFile(t.Name(), `The name field is: "{{ name }}"`, dir)
 	defer remove_template()
 
 	resource.UnitTest(t, resource.TestCase{
@@ -564,10 +534,9 @@ func TestJinjaTemplateWithValidation(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
 					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
-						expected := heredoc.Doc(`
-						The name field is: "schema"`)
+						expected := `The name field is: "schema"`
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -578,9 +547,7 @@ func TestJinjaTemplateWithValidation(t *testing.T) {
 }
 
 func TestJinjaTemplateWithInlineSchema(t *testing.T) {
-	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
-	The name field is: "{{ name }}"
-	`))
+	template, _, dir, remove := mustCreateFile(t.Name(), `The name field is: "{{ name }}"`)
 	defer remove()
 
 	resource.UnitTest(t, resource.TestCase{
@@ -613,10 +580,9 @@ func TestJinjaTemplateWithInlineSchema(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
 					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
-						expected := heredoc.Doc(`
-						The name field is: "schema"`)
+						expected := `The name field is: "schema"`
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -727,7 +693,7 @@ func TestJinjaTemplateWithFooter(t *testing.T) {
 						body
 						footer`)
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -761,9 +727,11 @@ func TestJinjaTemplateWithHeaderMacro(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
 					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
-						expected := "This should be visible!"
+						expected := heredoc.Doc(`
+						This should be visible!
+						`)
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -778,7 +746,6 @@ func TestGonjaForLoop(t *testing.T) {
 	{%- for key, value in dictionary %}
 	{{ key }} = {{ value }}
 	{%- endfor %}
-
 	`))
 	defer remove()
 
@@ -807,7 +774,7 @@ func TestGonjaForLoop(t *testing.T) {
 						tic = toc
 						`)
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -840,9 +807,10 @@ func TestGonjaNoneValue(t *testing.T) {
 						expected := heredoc.Doc(`
 						True
 						False
+
 						`)
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -853,9 +821,7 @@ func TestGonjaNoneValue(t *testing.T) {
 }
 
 func TestJinjaTemplateWithIntegerInYAMLContext(t *testing.T) {
-	template, _, dir, remove_template := mustCreateFile(t.Name(), heredoc.Doc(`
-	The int field is: {{ integer }}
-	`))
+	template, _, dir, remove_template := mustCreateFile(t.Name(), `The int field is: {{ integer }}`)
 	defer remove_template()
 
 	resource.UnitTest(t, resource.TestCase{
@@ -875,10 +841,9 @@ func TestJinjaTemplateWithIntegerInYAMLContext(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
 					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
-						expected := heredoc.Doc(`
-						The int field is: 123`)
+						expected := `The int field is: 123`
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -960,9 +925,7 @@ func TestJinjaTemplateWithMultipleSchemas(t *testing.T) {
 	`))
 	defer remove_schema()
 
-	template, _, _, remove_template := mustCreateFile(t.Name(), heredoc.Doc(`
-	The name field is: "{{ name }}"
-	`), dir)
+	template, _, _, remove_template := mustCreateFile(t.Name(), `The name field is: "{{ name }}"`, dir)
 	defer remove_template()
 
 	resource.UnitTest(t, resource.TestCase{
@@ -1007,10 +970,9 @@ func TestJinjaTemplateWithMultipleSchemas(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
 					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
-						expected := heredoc.Doc(`
-						The name field is: "schema"`)
+						expected := `The name field is: "schema"`
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
@@ -1301,17 +1263,15 @@ func TestJinjaTemplateInlined(t *testing.T) {
 					template = <<-EOF
 					{%- if "foo" in "foo bar" -%}
 					Look at me!
-					{% endif %}
+					{%- endif -%}
 					EOF
 				}`),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
 					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
-						expected := heredoc.Doc(`
-						Look at me!
-						`)
+						expected := `Look at me!`
 						if expected != got {
-							return fmt.Errorf("\nexpected:\n%s\ngot:\n%s", expected, got)
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
 						return nil
 					}),
