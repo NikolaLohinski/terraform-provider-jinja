@@ -7,7 +7,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.24.1
 	github.com/imdario/mergo v0.3.12
-	github.com/nikolalohinski/gonja v1.2.3
+	github.com/nikolalohinski/gonja v1.3.0
 	github.com/santhosh-tekuri/jsonschema/v5 v5.1.1
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -50,6 +50,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421 // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/oklog/run v1.1.0 // indirect
+	github.com/pelletier/go-toml/v2 v2.0.7 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/vmihailenco/msgpack v4.0.4+incompatible // indirect

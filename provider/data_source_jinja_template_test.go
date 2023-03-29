@@ -129,7 +129,7 @@ func TestJinjaTemplateOtherDelimiters(t *testing.T) {
 	I am cornered
 	|##- endif ##|
 	<< "but pointy" >>
-	[#- "and can be invisible!" -#]
+	[# "and can be invisible!" #]
 	`))
 	defer remove()
 
@@ -334,7 +334,7 @@ func TestJinjaTemplateOtherDelimitersAtProviderLevel(t *testing.T) {
 	I am cornered
 	[%- endif %]
 	<< "but pointy" >>
-	|#- "and can be invisible!" -#|
+	|# "and can be invisible!" #|
 	`))
 	defer remove()
 

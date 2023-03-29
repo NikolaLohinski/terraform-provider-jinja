@@ -60,8 +60,8 @@ func NewLexer(input string) *Lexer {
 		Tokens: make(chan *Token),
 		Config: cfg,
 		RawStatements: rawStmt{
-			"raw":     regexp.MustCompile(fmt.Sprintf(`%s\s*endraw`, escape_chars_clashing_regexp(cfg.BlockStartString))),
-			"comment": regexp.MustCompile(fmt.Sprintf(`%s\s*endcomment`, escape_chars_clashing_regexp(cfg.BlockStartString))),
+			"raw":     regexp.MustCompile(fmt.Sprintf(`%s-?\s*endraw`, escape_chars_clashing_regexp(cfg.BlockStartString))),
+			"comment": regexp.MustCompile(fmt.Sprintf(`%s-?\s*endcomment`, escape_chars_clashing_regexp(cfg.BlockStartString))),
 		},
 	}
 }
@@ -265,13 +265,18 @@ func (l *Lexer) lexRaw() lexFn {
 
 func (l *Lexer) lexComment() lexFn {
 	l.Pos += len(l.Config.CommentStartString)
+	l.accept("-")
 	l.emit(CommentBegin)
 	i := strings.Index(l.Input[l.Pos:], l.Config.CommentEndString)
 	if i < 0 {
 		return l.errorf("unclosed comment")
 	}
 	l.Pos += i
+	if l.Input[l.Pos-1] == '-' {
+		l.Pos -= 1
+	}
 	l.emit(Data)
+	l.accept("-")
 	l.Pos += len(l.Config.CommentEndString)
 	l.emit(CommentEnd)
 	return l.lexData
