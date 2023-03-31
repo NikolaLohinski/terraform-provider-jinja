@@ -1227,7 +1227,7 @@ func TestJinjaWhenGonjaHangsForever(t *testing.T) {
 				data "jinja_template" "render" {
 					template = "` + path.Join(dir, template) + `"
 				}`),
-				ExpectError: regexp.MustCompile("Error: failed to render context: rendering timed out after .*: known possible reasons for timeouts are:"),
+				ExpectError: regexp.MustCompile(`Error:.* failed to parse template: Expected either a number, string, keyword or identifier. \(Line: 0 Col: 0, near "known bug of gonja which hangs forever if there's an unclosed string`),
 			},
 		},
 	})

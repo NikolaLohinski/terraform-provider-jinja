@@ -42,7 +42,6 @@ func Render(ctx *Context) ([]byte, map[string]interface{}, error) {
 				Known possible reasons for gonja panic attacks are:
 				- call to the panic filter
 				- call to a non existent macro
-				- trying to do python-like object indexing using something like 'object["key"]'
 				`), err)
 			}
 			channel <- result
@@ -82,7 +81,6 @@ func Render(ctx *Context) ([]byte, map[string]interface{}, error) {
 	case <-time.After(defaultRenderTimeout):
 		return nil, nil, fmt.Errorf(heredoc.Doc(`
 			rendering timed out after %s: known possible reasons for timeouts are:
-			- an unclosed string
 			- an unclosed variable block in an included template
 		`), defaultRenderTimeout.String())
 	}
