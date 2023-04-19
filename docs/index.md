@@ -59,16 +59,16 @@ The following sections describe the features available in the engine.
 
 This section describes the syntax and semantics of the template engine and will be most useful as reference to those creating Jinja templates. A _statement_  (or _control structure_) is a special keyword that can be used in block to achieve conditional logic in a template.
 
-Any statement that is also implemented in the `python` version of the Jinja engine will be marked with the following tag:
+Any statement that is also implemented in the `python` version of the Jinja engine will be marked with the following clickable admonition:
 
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#list-of-control-structures) |
+| --- |
 
-For any of those, the [official documentation for `python`'s Jinja implementation](https://jinja.palletsprojects.com/en/3.0.x/templates/) can be used as additional reference.
+Which can be used to browse the `python` dedicated documentation for additional details.
 
 ### The `if` statement
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#if) |
+| --- |
 
 The `if` statement in Jinja is comparable with `python`'s `if` statement.
 
@@ -83,8 +83,8 @@ The `if` statement in Jinja is comparable with `python`'s `if` statement.
 ```
 
 ### The `set` statement
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#assignments) |
+| --- |
 
 Inside code blocks, you can also assign values to variables:
 
@@ -96,8 +96,8 @@ Inside code blocks, you can also assign values to variables:
 For more details on scoping especially within a `for` loop, please refer to the `python` [implementation documentation](https://jinja.palletsprojects.com/en/3.0.x/templates/#assignments).
 
 ### The `for` statement
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#for) |
+| --- |
 
 Loop over each item in a sequence. For example, to display a list of users provided in a variable called users:
 
@@ -123,8 +123,8 @@ For more details on the special variables available within the loop, please refe
 
 
 ### The `include` statement
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#include) |
+| --- |
 
 The include tag is useful to include a template and return the rendered contents of that file into the current namespace:
 
@@ -135,8 +135,8 @@ The include tag is useful to include a template and return the rendered contents
 ```
 
 ### The `with` statement
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#with-statement) |
+| --- |
 
 The with statement makes it possible to create a new inner scope. Variables set within this scope are not visible outside of the scope.
 
@@ -154,7 +154,7 @@ Which is equivalent to:
 ```
 
 ### The `filter` statement
-| 🐍 `python` |
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#id11) |
 |-------------|
 
 Filter sections allow you to apply regular Jinja filters on a full node of template data. It just wraps the code in the special `filter` section:
@@ -167,8 +167,8 @@ Filter sections allow you to apply regular Jinja filters on a full node of templ
 
 
 ### The `raw` statement
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#escaping) |
+| --- |
 
 It is sometimes desirable – even necessary – to have Jinja ignore parts it would otherwise handle as variables or blocks and is possible with the `raw` statement:
 ```html
@@ -182,8 +182,8 @@ It is sometimes desirable – even necessary – to have Jinja ignore parts it w
 ```
 
 ### The `block` and `extends` statements
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#child-template) |
+| --- |
 
 The most powerful part of Jinja is template inheritance. Template inheritance allows you to build a base “skeleton” template that contains all the common elements of your site and defines blocks that child templates can override.
 
@@ -231,8 +231,8 @@ A child template might look like this:
 The `{% extends %}` tag is the key here. It tells the template engine that this template “extends” another template. When the template system evaluates this template, it first locates the parent. The extends tag should be the first tag in the template. Everything before it is printed out normally and may cause confusion. Also a block will always be filled in regardless of whether the surrounding condition is evaluated to be `True` or `False`.
 
 ### The `import` and `macro` statements
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#import) |
+| --- |
 
 Jinja supports putting often used code into macros. Macros are comparable with functions in regular programming languages. They are useful to put often used idioms into reusable functions to not repeat yourself (“DRY”). These macros can go into different templates and get imported from there. This works similarly to the `import` statements in Python.
 
@@ -278,8 +278,8 @@ Alternatively, you can `import` specific names from a template into the current 
 Included templates have access to the variables of the active context by default.
 
 ### The `autoescape` statement
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#autoescape-overrides) |
+| --- |
 
 If you want you can activate and deactivate the autoescaping from within the templates.
 
@@ -294,23 +294,22 @@ counting {{ index + 1 }}
 {% endfor %}
 ```
 
-Any global function that is also implemented in the `python` version of the Jinja engine will be marked with the following tag:
+Any global function that is also implemented in the `python` version of the Jinja engine will be marked with the following clickable admonition:
 
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#list-of-global-functions) |
+| --- |
 
-For any of those, the [official documentation for `python`'s Jinja implementation](https://jinja.palletsprojects.com/en/3.1.x/templates/#list-of-global-functions) can be used as additional reference.
-
+Which can be used to browse the `python` dedicated documentation for additional details.
 
 ### The `dict` function      
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-globals.dict) |
+| --- |
 
 A convenient alternative to dict literals. `{'foo': 'bar'}` is the same as `dict(foo='bar')`.
 
 ### The `namespace` function 
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-globals.namespace) |
+| --- |
 
 Creates a new container that allows attribute assignment using the `{% set %}` tag:
 
@@ -333,14 +332,14 @@ Found item having something: {{ ns.found }}
 ```
 
 ### The `range` function     
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-globals.range) |
+| --- |
 
 Return a list containing an arithmetic progression of integers. `range(i, j)` returns _[i, i+1, i+2, ..., j-1]_; the `start` (!) defaults to `0`. When a `step` is given, it specifies the increment (or decrement). For example, `range(4)` and `range(0, 4, 1)` return _[0, 1, 2, 3]_.
 
 ### The `cycler` function
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-globals.cycler) |
+| --- |
 
 Cycle through values by yielding them one at a time, then restarting once the end is reached.
 
@@ -359,8 +358,8 @@ Similar to `loop.cycle`, but can be used outside loops or across multiple loops.
 ```
 
 ### The `joiner` function    
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-globals.joiner) |
+| --- |
 
 A tiny helper that can be used to “join” multiple sections. A `joiner` is passed a string and will return that string every time it’s called, except the first time (in which case it returns an empty string). You can use this to join things:
 
@@ -378,8 +377,8 @@ A tiny helper that can be used to “join” multiple sections. A `joiner` is pa
 ```
 
 ### The `lipsum` function    
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-globals.lipsum) |
+| --- |
 
 Generates some lorem ipsum for the template. By default, five paragraphs of HTML are generated with each paragraph between 20 and 100 words. If html is False, regular text is returned. This is useful to generate simple contents for layout testing.
 
@@ -398,16 +397,16 @@ Variables can be modified by filters. Filters are separated from the variable by
 {% endfor %}
 ```
 
-Any filter that is also implemented in the `python` version of the Jinja engine will be marked with the following tag:
+Any filter that is also implemented in the `python` version of the Jinja engine will be marked with the following clickable admonition:
 
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#builtin-filters) |
+| --- |
 
-For any of those, the [official documentation for `python`'s Jinja implementation](https://jinja.palletsprojects.com/en/3.1.x/templates/#list-of-builtin-tests)  can be used as additional reference.
+Which can be used to browse the `python` dedicated documentation for additional details.
 
 ### The `abs` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.abs) |
+| --- |
 
 Return the absolute value of the integer or float passed.
 
@@ -432,8 +431,8 @@ Will render into:
 ```
 
 ### The `attr` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.attr) |
+| --- |
 
 Get an attribute of an object. However, items are not looked up.
 
@@ -449,8 +448,8 @@ three
 ```
 
 ### The `batch` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.batch) |
+| --- |
 
 A filter that batches items. It returns a list of lists with the given number of items and will fill missing items if the second parameter `fille_with` is passed:
 ```html
@@ -482,14 +481,14 @@ _False_ values are:
 Any other type passed will cause the `bool` filter to fail.
 
 ### The `capitalize` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.capitalize) |
+| --- |
 
 Capitalize a value. The first character will be uppercase, all others lowercase.
 
 ### The `center` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.center) |
+| --- |
 
 Centers the value in a field of a given width.
 
@@ -506,9 +505,9 @@ Will render into:
 ["one","two","three"]
 ```
 
-### The `default`/`d` filter
-| 🐍 `python` |
-|-------------|
+### The `default` or `d` filter
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.default) |
+| --- |
 
 If the value is undefined it will return the passed default value, otherwise the value of the variable:
 ```
@@ -516,8 +515,8 @@ If the value is undefined it will return the passed default value, otherwise the
 ```
 
 ### The `dictsort` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.dictsort) |
+| --- |
 
 Sort a dict and yield (key, value) pairs. Dictionaries may not be in the order you want to display them in, so sort them first.
 
@@ -532,9 +531,9 @@ Will render into:
 one/two
 ```
 
-### The `escape`/`e` filter
-| 🐍 `python` |
-|-------------|
+### The `escape` or `e` filter
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.escape) |
+| --- |
 
 Replace the characters &, <, >, ', and " in the string with HTML-safe sequences. Use this if you need to display text that might contain such characters in HTML.
 
@@ -568,14 +567,14 @@ folder that contains the file being rendered.
 ```
 
 ### The `filesizeformat` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.filesizeformat) |
+| --- |
 
 Format the value like a ‘human-readable’ file size (i.e. 13 kB, 4.1 MB, 102 Bytes, etc).
 
 ### The `first` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.first) |
+| --- |
 
 Return the first item of a sequence.
 
@@ -593,20 +592,20 @@ Will render into:
 ```
 
 ### The `float` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.float) |
+| --- |
 
 Convert the value into a floating point number
 
 ### The `forceescape` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.forceescape) |
+| --- |
 
 Enforce HTML escaping. This will probably double escape variables.
 
 ### The `format` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.format) |
+| --- |
 
 Apply the given values to a printf-style format string, like string % values.
 ```
@@ -680,8 +679,8 @@ The filter has the following keyword attributes:
 - `default`: any value to pass as default if the key is not found. This takes precedence over the `strict` attribute if defined. Defaults to nil value ;
 
 ### The `groupby` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.groupby) |
+| --- |
 
 Group a sequence of objects by an attribute.
 
@@ -712,20 +711,20 @@ false is no
 ```
 
 ### The `indent` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.indent) |
+| --- |
 
 Return a copy of the string with each line indented by 4 spaces. The first line and blank lines are not indented by default.
 
 ### The `int` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.int) |
+| --- |
 
 Convert the value into an integer.
 
 ### The `join` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.join) |
+| --- |
 
 Return a string which is the concatenation of the strings in the sequence. The separator between elements is an empty string per default,
 
@@ -751,33 +750,33 @@ a > b > c
 Note that the order of keys is not guaranteed as there is no ordering in Golang maps.
 
 ### The `last` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.last) |
+| --- |
 
 Return the last item of a sequence.
 
 ### The `length` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.length) |
+| --- |
 
 Return the number of items in a container.
 
 ### The `list` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.list) |
+| --- |
 
 Convert the value into a list. If it was a string the returned list will be a list of characters.
 
 ### The `lower` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.lower) |
+| --- |
 
 Convert a value to lowercase.
 
 ### The `map` filter
 
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.map) |
+| --- |
 
 Applies a filter on a sequence of objects or looks up an attribute. This is useful when dealing with lists of objects but you are really only interested in a certain value of it.
 
@@ -787,27 +786,33 @@ The basic usage is mapping on an attribute. Imagine you have a list of users but
 Users on this page: {{ users | map(attribute='username') | join(', ') }}
 ```
 
-### The `max` and `min` filters
-| 🐍 `python` |
-|-------------|
+### The `min` filter
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.min) |
+| --- |
 
-Return the largest/smallest item from the sequence.
+Return the smallest item from the sequence.
+
+### The `max` filter
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.max) |
+| --- |
+
+Return the largest item from the sequence.
 
 ### The `pprint` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.pprint) |
+| --- |
 
 Pretty print a variable.
 
 ### The `random` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.random) |
+| --- |
 
 Return a random item from the sequence.
 
 ### The `rejectattr` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.rejectattr) |
+| --- |
 
 Filters a sequence of objects by applying a test to the specified attribute of each object, and rejecting the objects with the test succeeding.
 
@@ -819,8 +824,8 @@ If no test is specified, the attribute’s value will be evaluated as a boolean.
 ```
 
 ### The `reject` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.reject) |
+| --- |
 
 Filters a sequence of objects by applying a test to each object, and rejecting the objects with the test succeeding.
 
@@ -833,20 +838,20 @@ Example usage:
 ```
 
 ### The `replace` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.replace) |
+| --- |
 
 Return a copy of the value with all occurrences of a substring replaced with a new one.
 
 ### The `reverse` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.reverse) |
+| --- |
 
 Reverse the object or return an iterator that iterates over it the other way round.
 
 ### The `round` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.round) |
+| --- |
 
 Round the number to a given precision. The first parameter specifies the precision (default is 0), the second the rounding method:
 
@@ -857,14 +862,14 @@ Round the number to a given precision. The first parameter specifies the precisi
 If you don’t specify a method `common` is used.
 
 ### The `safe` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.safe) |
+| --- |
 
 Mark the value as safe which means that in an environment with automatic escaping enabled this variable will not be escaped.
 
 ### The `selectattr` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.selectattr) |
+| --- |
 
 Filters a sequence of objects by applying a test to the specified attribute of each object, and only selecting the objects with the test succeeding.
 
@@ -876,9 +881,8 @@ If no test is specified, the attribute’s value will be evaluated as a boolean.
 ```
 
 ### The `select` filter
-
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.select) |
+| --- |
 
 Filters a sequence of objects by applying a test to each object, and only selecting the objects with the test succeeding.
 
@@ -893,9 +897,8 @@ If no test is specified, each object will be evaluated as a boolean.
 ```
 
 ### The `slice` filter
-
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.slice) |
+| --- |
 
 Slice an iterator and return a list of lists containing those items. Useful if you want to create a div containing three ul tags that represent columns:
 
@@ -914,8 +917,8 @@ Slice an iterator and return a list of lists containing those items. Useful if y
 If you pass it a second argument it’s used to fill missing values on the last iteration.
 
 ### The `sort` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.sort) |
+| --- |
 
 Sort an iterable input.
 
@@ -933,20 +936,20 @@ Will render into:
 ```
 
 ### The `string` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.string) |
+| --- |
 
 Convert an object to a string if it isn’t already.
 
 ### The `striptags` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.striptags) |
+| --- |
 
 Strip SGML/XML tags and replace adjacent whitespace by one space.
 
 ### The `sum` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.sum) |
+| --- |
 
 Returns the sum of a sequence of numbers plus the value of parameter `start` (which defaults to 0). When the sequence is empty it returns `start`.
 
@@ -957,14 +960,14 @@ Total: {{ items | sum(attribute='price') }}
 ```
 
 ### The `title` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.title) |
+| --- |
 
 Return a titlecased version of the value. I.e. words will start with uppercase letters, all remaining characters are lowercase.
 
 ### The `tojson` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.tojson) |
+| --- |
 
 Serialize an object to a string of JSON. It takes an `indent` parameter to do pretty printing.
 
@@ -999,15 +1002,14 @@ nested:
 ```
 
 ### The `trim` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.trim) |
+| --- |
 
 Strip leading and trailing characters, by default whitespace.
 
 ### The `truncate` filter
-
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.truncate) |
+| --- |
 
 Return a truncated copy of the string. The length is specified with the first parameter which defaults to 255.
 
@@ -1033,9 +1035,8 @@ Now you see me!
 This is useful when `strict_undefined = true` is set but you need to handle a missing key without throwing errors in a given template ;
 
 ### The `unique` filter
-
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.unique) |
+| --- |
 
 Returns a list of unique items from the given iterable.
 
@@ -1065,20 +1066,20 @@ Will render into:
 ```
 
 ### The `upper` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.upper) |
+| --- |
 
 Convert a value to uppercase.
 
 ### The `urlencode` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.urlencode) |
+| --- |
 
 Quote data for use in a URL path or query using UTF-8.
 
 ### The `urlize` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.urlize) |
+| --- |
 
 Convert URLs in text into clickable links.
 
@@ -1102,20 +1103,20 @@ Will render into:
 ```
 
 ### The `wordcount` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.wordcount) |
+| --- |
 
 Count the words in that string.
 
 ### The `wordwrap` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.wordwrap) |
+| --- |
 
 Wrap a string to the given width. Existing newlines are treated as paragraphs to be wrapped separately.
 
 ### The `xmlattr` filter
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.xmlattr) |
+| --- |
 
 Create an SGML/XML attribute string based on the items in a dict.
 
@@ -1132,29 +1133,35 @@ A test can be used in blocks and/or expressions to trigger conditional behavior,
 {% end if%}
 ```
 
-Any test that is also implemented in the `python` version of the Jinja engine will be marked with the following tag:
+Any test that is also implemented in the `python` version of the Jinja engine will be marked with the following clickable admonition:
 
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#list-of-builtin-tests) |
+| --- |
 
-For any of those, the [official documentation for `python`'s Jinja implementation](https://jinja.palletsprojects.com/en/3.1.x/templates/#list-of-builtin-tests)  can be used as additional reference.
+Which can be used to browse the `python` dedicated documentation for additional details.
 
 
 ### The `callable` test
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.callable) |
+| --- |
 
 Return whether the object is callable (i.e., some kind of function).
 
-### The `defined` and `undefined` tests
-| 🐍 `python` |
+### The `defined` test
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.defined) |
+| --- |
+
+Tells whether a variable is defined.
+
+### The  `undefined` test
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.undefined) |
 |-------------|
 
-Tells whether a variable is `defined` or `undefined`.
+Tells when a variable is not defined.
 
 ### The `divisibleby` test
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.divisibleby) |
+| --- |
 
 Check if a variable is divisible by a number.
 ```
@@ -1163,27 +1170,58 @@ Check if a variable is divisible by a number.
 {% endif %}
 ```
 
-### The `eq`/`equalto`/`==` and `ne`/`!=` tests
-| 🐍 `python` |
-|-------------|
+### The `eq`, `equalto` or `==` test
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.eq) |
+| --- |
 
-Classic arithmetic equality and inequality comparisons.
+Classic equality comparisons.
 
-### The `ge`/`>=`, `gt`/`>`, `le`/`<=` and `lt`/`<` tests
-| 🐍 `python` |
-|-------------|
+### The `ne`  or `!=` test
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.ne) |
+| --- |
+
+Classic arithmetic inequality comparisons.
+
+### The `ge` or `>=` test
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.ge) |
+| --- |
 
 Classic arithmetic comparisons.
 
-### The `even` and `odd` tests
-| 🐍 `python` |
-|-------------|
+### The `gt` or `>` test
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.gt) |
+| --- |
 
-Tells whether a given number can be divided by 2 (`even`) or not (`odd`).
+Classic arithmetic comparisons.
+
+### The `le` or `<=` test
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.le) |
+| --- |
+
+Classic arithmetic comparisons.
+
+
+### The `lt` or `<` test
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.lt) |
+| --- |
+
+Classic arithmetic comparisons.
+
+### The `even` test
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.even) |
+| --- |
+
+Tells whether a given number can be divided by 2.
+
+### The `odd` test
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.odd) |
+| --- |
+
+Tells whether a given number can not be divided by 2.
 
 ### The `in` test
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.in) |
+| --- |
 
 Return whether the input contains the argument:
 * on strings, tells whether the provided substring is part of the tested one ;
@@ -1196,9 +1234,9 @@ Return whether the input contains the argument:
 {{ "value" is in {"key": "value"} }}  // False
 ```
 
-### The `iterable` tests
-| 🐍 `python` |
-|-------------|
+### The `iterable` test
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.iterable) |
+| --- |
 
 Check if it’s possible to iterate over the tested input, i.e the object is either a list, a dictionary or a string.
 
@@ -1206,13 +1244,31 @@ Check if it’s possible to iterate over the tested input, i.e the object is eit
 Check if the input is empty. Works on strings, lists and dictionaries.
 
 ### The `none` test
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.none) |
+| --- |
 
 Return `True` if the input is `nil` or `None`
 
-### The `mapping`,`sequence`, `number` and `string` tests
-| 🐍 `python` |
-|-------------|
+### The `mapping` test
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.mapping) |
+| --- |
+
+Classic type casting tests.
+
+### The `sequence` test
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.sequence) |
+| --- |
+
+Classic type casting tests.
+
+### The `number` test
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.number) |
+| --- |
+
+Classic type casting tests.
+
+### The `string` test
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.string) |
+| --- |
 
 Classic type casting tests.
