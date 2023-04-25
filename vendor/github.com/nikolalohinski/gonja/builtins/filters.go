@@ -1095,10 +1095,16 @@ func filterTitle(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.
 }
 
 func filterTrim(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
-	if p := params.ExpectNothing(); p.IsError() {
+	charsParam := exec.KwArg{
+		Name:    "chars",
+		Default: " ",
+	}
+	p := params.ExpectKwArgs([]*exec.KwArg{&charsParam})
+	if p.IsError() || !in.IsString() {
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'trim'"))
 	}
-	return exec.AsValue(strings.TrimSpace(in.String()))
+	chars := p.GetKwarg(charsParam.Name, charsParam.Default).String()
+	return exec.AsValue(strings.Trim(in.String(), chars))
 }
 
 func filterToJSON(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
@@ -1777,11 +1783,17 @@ func filterPanic(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.
 }
 
 func filterDefault(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
-	p := params.ExpectArgs(1)
-	if p.IsError() {
+	p := params.Expect(1, []*exec.KwArg{{
+		Name:    "boolean",
+		Default: false,
+	}})
+	if p.IsError() || !p.GetKwarg("boolean", false).IsBool() {
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'default'"))
 	}
 	if in.IsError() || in.IsNil() {
+		return p.First()
+	}
+	if p.GetKwarg("boolean", false).Bool() && !in.Bool() {
 		return p.First()
 	}
 	return in
