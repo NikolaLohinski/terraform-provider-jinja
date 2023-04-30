@@ -4,6 +4,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/nikolalohinski/gonja/nodes"
+	"github.com/nikolalohinski/gonja/tokens"
 )
 
 func (p *Parser) ParseTest(expr nodes.Expression) (nodes.Expression, error) {
@@ -17,7 +18,7 @@ func (p *Parser) ParseTest(expr nodes.Expression) (nodes.Expression, error) {
 	}
 
 	if p.MatchName("is") != nil {
-		not := p.MatchName("not")
+		not := p.Match(tokens.Not)
 		ident := p.Next()
 
 		test := &nodes.TestCall{
@@ -26,50 +27,23 @@ func (p *Parser) ParseTest(expr nodes.Expression) (nodes.Expression, error) {
 			Args:   []nodes.Expression{},
 			Kwargs: map[string]nodes.Expression{},
 		}
-
-		arg, err := p.ParseExpression()
-		if err == nil && arg != nil {
-			test.Args = append(test.Args, arg)
+		// avoid trying to parse "else" as test arguments
+		if p.CurrentName("else") == nil {
+			arg, err := p.ParseExpression()
+			if err == nil && arg != nil {
+				test.Args = append(test.Args, arg)
+			}
 		}
-
-		// // Check for test-argument (2 tokens needed: ':' ARG)
-		// if p.Match(tokens.Lparen) != nil {
-		// 	if p.Peek(tokens.VariableEnd) != nil {
-		// 		return nil, p.Error("Filter parameter required after '('.", nil)
-		// 	}
-
-		// 	for p.Match(tokens.Comma) != nil || p.Match(tokens.Rparen) == nil {
-		// 		// TODO: Handle multiple args and kwargs
-		// 		v, err := p.ParseExpression()
-		// 		if err != nil {
-		// 			return nil, err
-		// 		}
-
-		// 		if p.Match(tokens.Assign) != nil {
-		// 			key := v.Position().Val
-		// 			value, errValue := p.ParseExpression()
-		// 			if errValue != nil {
-		// 				return nil, errValue
-		// 			}
-		// 			test.Kwargs[key] = value
-		// 		} else {
-		// 			test.Args = append(test.Args, v)
-		// 		}
-		// 	}
-		// } else {
-		// 	arg, err := p.ParseExpression()
-		// 	if err == nil && arg != nil {
-		// 		test.Args = append(test.Args, arg)
-		// 	}
-		// }
-
 		expr = &nodes.TestExpression{
 			Expression: expr,
 			Test:       test,
 		}
 
 		if not != nil {
-			expr = &nodes.Negation{expr, not}
+			expr = &nodes.Negation{
+				Term:     expr,
+				Operator: not,
+			}
 		}
 	}
 
