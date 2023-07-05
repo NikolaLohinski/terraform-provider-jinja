@@ -101,7 +101,12 @@ func dataSourceJinjaTemplate() *schema.Resource {
 			"template": {
 				Type:        schema.TypeString,
 				Required:    true,
-				Description: "Inlined or path to the jinja template to render. If the template is passed inlined, any filesystem calls such as using the `include` statement or the `fileset` filter won't work as expected.",
+				Description: "Inlined or path to the jinja template to render. If the template is passed inlined, using the working_directory field is highly recommended",
+			},
+			"working_directory": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Directory from where to operate the Jinja engine. If the template field is set to a path, the default working directory will be the containing folder of the template. Otherwise, a temporary folder will be created unless this field is defined",
 			},
 			"schema": {
 				Type:          schema.TypeString,
@@ -174,7 +179,8 @@ func read(d *schema.ResourceData, meta interface{}) error {
 
 	// check if template location is not an existing file, then most likely it's an inlined template
 	if _, err := os.Stat(ctx.Template.Location); err != nil {
-		temp, err := os.CreateTemp("", "")
+
+		temp, err := os.CreateTemp(ctx.Template.WorkingDirectory, "")
 		if err != nil {
 			return fmt.Errorf("failed to create temporary file to hold the inlined template: %s", err)
 		}
@@ -234,9 +240,10 @@ func parseContext(d *schema.ResourceData, meta interface{}) (*lib.Context, error
 
 	return &lib.Context{
 		Template: lib.Template{
-			Header:   d.Get("header").(string),
-			Footer:   d.Get("footer").(string),
-			Location: d.Get("template").(string),
+			Header:           d.Get("header").(string),
+			Footer:           d.Get("footer").(string),
+			Location:         d.Get("template").(string),
+			WorkingDirectory: d.Get("working_directory").(string),
 		},
 		Schemas:       schemas,
 		Values:        values,

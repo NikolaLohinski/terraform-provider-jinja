@@ -1280,3 +1280,32 @@ func TestJinjaTemplateInlined(t *testing.T) {
 		},
 	})
 }
+
+func TestJinjaInlinedTemplateWithWorkingDir(t *testing.T) {
+	nested, expected, dir, remove_nested := mustCreateFile("nested", heredoc.Doc(`
+	I am nested !
+	`))
+	defer remove_nested()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProviderFactories: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: heredoc.Doc(`
+				data "jinja_template" "render" {
+					template = "{% include \"./` + nested + `\" %}"
+					working_directory = "` + dir + `"
+				}`),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
+					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
+						if expected != got {
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
+						}
+						return nil
+					}),
+				),
+			},
+		},
+	})
+}

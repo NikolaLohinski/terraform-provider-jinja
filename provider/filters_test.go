@@ -719,6 +719,43 @@ func TestFilterFileset(t *testing.T) {
 	})
 }
 
+func TestFilterFilesetWithWorkingDir(t *testing.T) {
+	nestedDir := path.Join(os.TempDir(), "nestedDir")
+	must(os.MkdirAll(nestedDir, os.ModePerm))
+
+	firstNested, _, dir, remove_first_nested := mustCreateFile("tmp-1-", "", nestedDir)
+	defer remove_first_nested()
+
+	secondNested, _, _, remove_second_nested := mustCreateFile("tmp-2-", "", nestedDir)
+	defer remove_second_nested()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProviderFactories: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: heredoc.Doc(`
+				data "jinja_template" "render" {
+					template = <<-EOF
+                      {%- set paths = "./*" | fileset -%}
+                      {{- paths[1] }} and {{ paths[2] -}}
+                      EOF
+					working_directory = "` + dir + `"
+				}`),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
+					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
+						expected := dir + `/` + firstNested + ` and ` + dir + `/` + secondNested
+						if expected != got {
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
+						}
+						return nil
+					}),
+				),
+			},
+		},
+	})
+}
+
 func TestFilterToYAML(t *testing.T) {
 	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
 	---
