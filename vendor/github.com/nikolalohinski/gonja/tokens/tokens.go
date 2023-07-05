@@ -24,6 +24,8 @@ const (
 	Lt
 	Lteq
 	Not
+	Is
+	In
 	And
 	Or
 	Mod
@@ -73,6 +75,8 @@ var Names = map[Type]string{
 	Dot:                "Dot",
 	Eq:                 "Eq",
 	Not:                "Not",
+	Is:                 "Is",
+	In:                 "In",
 	Floordiv:           "Floordiv",
 	Gt:                 "Gt",
 	Gteq:               "Gteq",
