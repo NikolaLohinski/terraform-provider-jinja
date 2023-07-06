@@ -9,10 +9,9 @@ type Context struct {
 	Schemas       map[string]json.RawMessage `json:"schemas,omitempty"`
 }
 type Template struct {
-	Location         string `json:"location"`
-	WorkingDirectory string `json:"working_directory"`
-	Header           string `json:"header"`
-	Footer           string `json:"footer"`
+	Location string `json:"location"`
+	Header   string `json:"header"`
+	Footer   string `json:"footer"`
 }
 
 type Values struct {

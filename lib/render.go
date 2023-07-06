@@ -120,7 +120,7 @@ func getValues(values []Values) (map[string]interface{}, error) {
 }
 
 func getTemplate(ctx *Context, environment *gonja.Environment) (*exec.Template, error) {
-	file, err := environment.Loader.Get(ctx.Template.Location)
+	file, err := environment.Loader.Get(path.Base(ctx.Template.Location))
 	if err != nil {
 		return nil, fmt.Errorf("error loading file: %s", err)
 	}
@@ -182,11 +182,8 @@ func getEnvironment(ctx *Context) (*gonja.Environment, error) {
 	gonjaConfig.CommentEndString = ctx.Configuration.Delimiters.CommentEnd
 
 	gonjaConfig.StrictUndefined = ctx.Configuration.StrictUndefined
-	root := ctx.Template.WorkingDirectory
-	if root == "" {
-		root = path.Dir(ctx.Template.Location)
-	}
-	loader, err := loaders.NewFileSystemLoader(root)
+
+	loader, err := loaders.NewFileSystemLoader(path.Dir(ctx.Template.Location))
 	if err != nil {
 		return nil, fmt.Errorf("failed get a file system loader: %v", err)
 	}
