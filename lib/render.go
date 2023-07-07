@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"dario.cat/mergo"
 	"github.com/MakeNowJust/heredoc"
 	"github.com/dustin/go-humanize"
-	"github.com/imdario/mergo"
 	"github.com/nikolalohinski/gonja"
 	"github.com/nikolalohinski/gonja/config"
 	"github.com/nikolalohinski/gonja/exec"
@@ -112,7 +112,7 @@ func getValues(values []Values) (map[string]interface{}, error) {
 			mergedValues = layer
 			continue
 		}
-		if err := mergo.Merge(&mergedValues, layer, mergo.WithOverride, mergo.WithOverwriteWithEmptyValue); err != nil {
+		if err := mergo.Merge(&mergedValues, layer, mergo.WithOverride, mergo.WithOverrideEmptySlice); err != nil {
 			return nil, fmt.Errorf("failed to merge %s values layer: %s", humanize.Ordinal(index+1), err)
 		}
 	}

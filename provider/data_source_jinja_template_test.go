@@ -1280,3 +1280,35 @@ func TestJinjaTemplateInlined(t *testing.T) {
 		},
 	})
 }
+
+func TestJinjaMergingObjectOnInteger(t *testing.T) {
+	resource.UnitTest(t, resource.TestCase{
+		ProviderFactories: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: heredoc.Doc(`
+				data "jinja_template" "render" {
+					context {
+						type = "json"
+						data = "{\"value\": 1}"
+					}
+					context {
+						type = "json"
+						data = "{\"value\": {\"nested\": 2}}"
+					}
+					template = "{{ value.nested }}"
+				}`),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
+					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
+						expected := "2"
+						if expected != got {
+							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
+						}
+						return nil
+					}),
+				),
+			},
+		},
+	})
+}

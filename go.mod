@@ -3,10 +3,10 @@ module github.com/nikolalohinski/terraform-provider-jinja
 go 1.20
 
 require (
+	dario.cat/mergo v1.0.0
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/dustin/go-humanize v1.0.1
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.24.1
-	github.com/imdario/mergo v0.3.12
 	github.com/nikolalohinski/gonja v1.5.1
 	github.com/santhosh-tekuri/jsonschema/v5 v5.1.1
 	gopkg.in/yaml.v3 v3.0.1
