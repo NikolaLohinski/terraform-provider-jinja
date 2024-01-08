@@ -6,10 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"log"
 	"os"
+	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/dustin/go-humanize"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -26,12 +26,28 @@ var default_delimiters = map[string]interface{}{
 	"comment_end":    "#}",
 }
 
-var context_types = []string{"yaml", "json"}
+var context_types = []string{"yaml", "json", "toml"}
 
 func strictUndefinedSchema() *schema.Schema {
 	return &schema.Schema{
 		Type:        schema.TypeBool,
 		Description: "Toggle to fail rendering on missing attribute/item",
+		Optional:    true,
+	}
+}
+
+func leftStripBlocksSchema() *schema.Schema {
+	return &schema.Schema{
+		Type:        schema.TypeBool,
+		Description: "If this is set to `true` leading spaces and tabs are stripped from the start of a line to a block",
+		Optional:    true,
+	}
+}
+
+func trimBlocksSchema() *schema.Schema {
+	return &schema.Schema{
+		Type:        schema.TypeBool,
+		Description: "If this is set to `true` the first newline after a block is removed (block, not variable tag!)",
 		Optional:    true,
 	}
 }
@@ -87,48 +103,59 @@ func dataSourceJinjaTemplate() *schema.Resource {
 	return &schema.Resource{
 		Read:        read,
 		Description: "The jinja_template data source renders a jinja template with a given template with possible JSON schema validation of the context",
+		Timeouts: &schema.ResourceTimeout{
+			Read: schema.DefaultTimeout(5 * time.Second),
+		},
 		Schema: map[string]*schema.Schema{
 			"header": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Description: "Header to add at the top of the template before rendering",
-			},
-			"footer": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Description: "Footer to add at the bottom of the template before rendering",
-			},
-			"template": {
-				Type:        schema.TypeString,
-				Required:    true,
-				Description: "Inlined or path to the jinja template to render. If the template is passed inlined, any filesystem calls such as using the `include` statement or the `fileset` filter won't work as expected.",
-			},
-			"schema": {
 				Type:          schema.TypeString,
 				Optional:      true,
-				Description:   "Either inline or a path to a JSON schema to validate the context",
-				Deprecated:    "Deprecated in favor of the 'validation' field",
-				ConflictsWith: []string{"schemas", "validation"},
+				Description:   "Header to add at the top of the template before rendering. Deprecated in favor of the `source` block",
+				Deprecated:    "Deprecated as the `source.template` field can be used alongside string manipulation within terraform to achieve the same behavior",
+				ConflictsWith: []string{"source"},
 			},
-			"schemas": {
-				Type:        schema.TypeList,
-				Optional:    true,
-				Description: "List of either inline or paths to JSON schemas to validate one by one in order against the context",
-				MinItems:    1,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
+			"footer": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Description:   "Footer to add at the bottom of the template before rendering. Deprecated in favor of the `source` block",
+				Deprecated:    "Deprecated as the `source.template` field can be used alongside string manipulation within terraform to achieve the same behavior",
+				ConflictsWith: []string{"source"},
+			},
+			"template": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Description:   "Inlined or path to the jinja template to render. If the template is passed inlined, any filesystem calls such as using the `include` statement or the `fileset` filter won't work as expected. Deprecated in favor of the `source` block",
+				Deprecated:    "Deprecated in favor of the `source` block",
+				ConflictsWith: []string{"source"},
+			},
+			"source": {
+				Type:          schema.TypeList,
+				Optional:      true,
+				Description:   "Source template to use for rendering",
+				ConflictsWith: []string{"template", "header", "footer"},
+				MaxItems:      1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"template": {
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "Template to render. If required to load an external file, then the `file(...)` function can be used to retrieve the file's content",
+						},
+						"directory": {
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "Path to the directory to use as the root starting point. If the template is an external file, then the `dirname(...)` function can be used to get the path to the template's directory. Otherwise, just using `path.module` is usually a good idea",
+						},
+					},
 				},
-				Deprecated:    "Deprecated in favor of the 'validation' field",
-				ConflictsWith: []string{"schema", "validation"},
 			},
 			"validation": {
 				Type:        schema.TypeMap,
 				Optional:    true,
-				Description: "Map of either inline or paths to JSON schemas to validate one by one in order against the context",
+				Description: "Map of JSON schemas to validate against the context. Schemas are tested sequentially in lexicographic order of this map's keys",
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
-				ConflictsWith: []string{"schema", "schemas"},
 			},
 			"context": {
 				Type:        schema.TypeList,
@@ -140,18 +167,20 @@ func dataSourceJinjaTemplate() *schema.Resource {
 							Type:         schema.TypeString,
 							Required:     true,
 							ValidateFunc: validation.StringInSlice(context_types, true),
-							Description:  fmt.Sprintf("Type of parsing (one of: %s) to perform on the given string or file", strings.Join(context_types, ", ")),
+							Description:  fmt.Sprintf("Type of parsing (one of: %s) to perform on the given string", strings.Join(context_types, ", ")),
 						},
 						"data": {
 							Type:        schema.TypeString,
 							Required:    true,
-							Description: "Either a string holding the serialized context or path to a file",
+							Description: "A string holding the serialized context",
 						},
 					},
 				},
 			},
-			"delimiters":       delimitersSchema(),
-			"strict_undefined": strictUndefinedSchema(),
+			"delimiters":        delimitersSchema(),
+			"strict_undefined":  strictUndefinedSchema(),
+			"trim_blocks":       trimBlocksSchema(),
+			"left_strip_blocks": leftStripBlocksSchema(),
 			"result": {
 				Type:        schema.TypeString,
 				Computed:    true,
@@ -170,27 +199,6 @@ func read(d *schema.ResourceData, meta interface{}) error {
 	ctx, err := parseContext(d, meta)
 	if err != nil {
 		return fmt.Errorf("failed to parse configuration passed to provider: %s", err)
-	}
-
-	// check if template location is not an existing file, then most likely it's an inlined template
-	if _, err := os.Stat(ctx.Template.Location); err != nil {
-		temp, err := os.CreateTemp("", "")
-		if err != nil {
-			return fmt.Errorf("failed to create temporary file to hold the inlined template: %s", err)
-		}
-		defer func() {
-			if err := os.Remove(temp.Name()); err != nil {
-				log.Printf("[ERROR] failed to remove temporary file")
-			}
-		}()
-		if _, err := temp.Write([]byte(ctx.Template.Location)); err != nil {
-			return fmt.Errorf("failed to write template to temporary file: %s", temp.Name())
-		}
-		if err := temp.Close(); err != nil {
-			return fmt.Errorf("failed to close temporary file: %s", temp.Name())
-		}
-		log.Printf("[WARN] detected inlined template: filesystem call such as the 'include' statement won't work as expected")
-		ctx.Template.Location = temp.Name()
 	}
 
 	result, values, err := lib.Render(ctx)
@@ -232,15 +240,17 @@ func parseContext(d *schema.ResourceData, meta interface{}) (*lib.Context, error
 		return nil, fmt.Errorf("failed to parse configuration: %s", err)
 	}
 
+	source, err := parseSource(d)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse source: %s", err)
+	}
+
 	return &lib.Context{
-		Template: lib.Template{
-			Header:   d.Get("header").(string),
-			Footer:   d.Get("footer").(string),
-			Location: d.Get("template").(string),
-		},
+		Source:        source,
 		Schemas:       schemas,
 		Values:        values,
 		Configuration: configuration,
+		Timeout:       d.Timeout(schema.TimeoutRead),
 	}, nil
 }
 
@@ -272,15 +282,7 @@ func parseSchemas(d *schema.ResourceData) (map[string]json.RawMessage, error) {
 
 	schemas := make(map[string]json.RawMessage)
 	for name, stringSchema := range stringSchemas {
-		if _, err := os.Stat(stringSchema); err == nil {
-			content, err := ioutil.ReadFile(stringSchema)
-			if err != nil {
-				return nil, fmt.Errorf("failed to read path %s: %s", stringSchema, err)
-			}
-			schemas[name] = json.RawMessage(content)
-		} else {
-			schemas[name] = json.RawMessage(stringSchema)
-		}
+		schemas[name] = json.RawMessage(stringSchema)
 	}
 
 	return schemas, nil
@@ -309,16 +311,32 @@ func parseConfiguration(d *schema.ResourceData, meta interface{}) (lib.Configura
 		}
 	}
 
-	strictUndefined, ok := d.GetOk("strict_undefined")
+	strictUndefined, ok := d.GetOkExists("strict_undefined")
 	if !ok {
 		strictUndefined, ok = metaObject["strict_undefined"]
 		if !ok {
 			strictUndefined = false
 		}
 	}
+	leftStripBlocks, ok := d.GetOkExists("left_strip_blocks")
+	if !ok {
+		leftStripBlocks, ok = metaObject["left_strip_blocks"]
+		if !ok {
+			leftStripBlocks = false
+		}
+	}
+	trimBlocks, ok := d.GetOkExists("trim_blocks")
+	if !ok {
+		trimBlocks, ok = metaObject["trim_blocks"]
+		if !ok {
+			trimBlocks = false
+		}
+	}
 
 	return lib.Configuration{
 		StrictUndefined: strictUndefined.(bool),
+		LeftStripBlocks: leftStripBlocks.(bool),
+		TrimBlocks:      trimBlocks.(bool),
 		Delimiters: lib.Delimiters{
 			BlockStart:    delimiters["block_start"].(string),
 			BlockEnd:      delimiters["block_end"].(string),
@@ -342,18 +360,9 @@ func parseValues(d *schema.ResourceData) ([]lib.Values, error) {
 		for index := range contexts {
 			kind := d.Get(fmt.Sprintf("context.%d.type", index)).(string)
 			dataField := d.Get(fmt.Sprintf("context.%d.data", index))
-			var data []byte
-			if _, err := os.Stat(dataField.(string)); err == nil {
-				data, err = ioutil.ReadFile(dataField.(string))
-				if err != nil {
-					return nil, fmt.Errorf("failed to read path %s: %s", dataField, err)
-				}
-			} else {
-				data = []byte(dataField.(string))
-			}
 			values[index] = lib.Values{
 				Type: kind,
-				Data: data,
+				Data: []byte(dataField.(string)),
 			}
 		}
 
@@ -361,4 +370,61 @@ func parseValues(d *schema.ResourceData) ([]lib.Values, error) {
 	}
 
 	return nil, nil
+}
+
+func parseSource(d *schema.ResourceData) (lib.Source, error) {
+	source := lib.Source{}
+
+	templateField, okTemplate := d.GetOk("template")
+	_, okSource := d.GetOk("source")
+
+	if !okTemplate && !okSource {
+		return source, fmt.Errorf("neither \"template\" nor \"source\" was set")
+	}
+	if okTemplate && okSource {
+		return source, fmt.Errorf("can not set \"template\" and \"source\" at the same time")
+	}
+	// Legacy behavior with file/inline handling and footer/header fields
+	if okTemplate {
+		if fileContent, err := os.ReadFile(templateField.(string)); err == nil {
+			source.Template = string(fileContent)
+
+			absolutePath, err := filepath.Abs(templateField.(string))
+			if err != nil {
+				return source, fmt.Errorf("failed to get an absolute path out of \"%s\": %s", templateField, err)
+			}
+			source.Directory = filepath.Dir(absolutePath)
+		} else {
+			source.Directory, err = os.Getwd()
+			if err != nil {
+				return source, fmt.Errorf("failed to get current working directory: %s", err)
+			}
+			source.Template = templateField.(string)
+		}
+		if header, ok := d.GetOk("header"); ok {
+			source.Template = header.(string) + "\n" + source.Template
+		}
+		if footer, ok := d.GetOk("footer"); ok {
+			source.Template = source.Template + "\n" + footer.(string)
+		}
+		return source, nil
+	}
+
+	template, ok := d.GetOk("source.0.template")
+	if !ok {
+		return source, errors.New("failed to get source.template field")
+	}
+	source.Template = template.(string)
+
+	directory, ok := d.GetOk("source.0.directory")
+	if !ok {
+		return source, errors.New("failed to get source.directory field")
+	}
+	var err error
+	source.Directory, err = filepath.Abs(directory.(string))
+	if err != nil {
+		return source, fmt.Errorf("failed to get an absolute path out of \"%s\": %s", directory, err)
+	}
+
+	return source, nil
 }

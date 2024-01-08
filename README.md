@@ -5,7 +5,7 @@
 
 A `terraform` provider that makes it possible to render [Jinja](https://jinja.palletsprojects.com/) templates within a `terraform` project.
 
-The Jinja engine used under the hood is based on [the `gonja` Golang library](https://github.com/nikolalohinski/gonja) and aims to be "mostly" compliant with the Jinja API. 
+The Jinja engine used under the hood is based on [the `gonja` Golang library](https://github.com/nikolalohinski/gonja/v2) and aims to be "mostly" compliant with the Jinja API.
 
 The JSON schema validation engine is based on [the `jsonschema` Golang library](https://github.com/santhosh-tekuri/jsonschema).
 
@@ -17,7 +17,10 @@ provider "jinja" {
 }
 
 data "jinja_template" "render" {
-  template = "${path.module}/template.j2"
+  source {
+    template  = file("${path.module}/template.j2")
+    directory = path.module
+  }
   context {
     type = "yaml"
     data = "${path.module}/src/context.yaml"

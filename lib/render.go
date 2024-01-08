@@ -1,26 +1,24 @@
 package lib
 
 import (
+	"bytes"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"path"
 	"sort"
 	"strings"
 	"time"
 
 	"dario.cat/mergo"
-	"github.com/MakeNowJust/heredoc"
 	"github.com/dustin/go-humanize"
-	"github.com/nikolalohinski/gonja"
-	"github.com/nikolalohinski/gonja/config"
-	"github.com/nikolalohinski/gonja/exec"
-	"github.com/nikolalohinski/gonja/loaders"
+	"github.com/nikolalohinski/gonja/v2"
+	"github.com/nikolalohinski/gonja/v2/config"
+	"github.com/nikolalohinski/gonja/v2/exec"
+	"github.com/nikolalohinski/gonja/v2/loaders"
+	"github.com/pelletier/go-toml/v2"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 	"gopkg.in/yaml.v3"
 )
-
-const defaultRenderTimeout = 5 * time.Second
 
 func Render(ctx *Context) ([]byte, map[string]interface{}, error) {
 	channel := make(chan struct {
@@ -36,24 +34,12 @@ func Render(ctx *Context) ([]byte, map[string]interface{}, error) {
 		}{}
 		defer func() {
 			if err := recover(); err != nil {
-				result.Err = fmt.Errorf(heredoc.Doc(`
-				a runtime error led gonja to panic: %s
-
-				Known possible reasons for gonja panic attacks are:
-				- call to the panic filter
-				- call to a non existent macro
-				`), err)
+				result.Err = fmt.Errorf("a runtime error led the jinja engine to panic: %s", err)
 			}
 			channel <- result
 		}()
 
-		environment, err := getEnvironment(ctx)
-		if err != nil {
-			result.Err = fmt.Errorf("failed to build jinja environment: %s", err)
-			return
-		}
-
-		template, err := getTemplate(ctx, environment)
+		template, err := parseTemplate(ctx)
 		if err != nil {
 			result.Err = fmt.Errorf("failed to parse template: %s", err)
 			return
@@ -70,7 +56,7 @@ func Render(ctx *Context) ([]byte, map[string]interface{}, error) {
 			return
 		}
 
-		result.Result, result.Err = template.Execute(result.Values)
+		result.Result, result.Err = template.ExecuteToString(exec.NewContext(result.Values))
 	}()
 	select {
 	case output := <-channel:
@@ -78,11 +64,8 @@ func Render(ctx *Context) ([]byte, map[string]interface{}, error) {
 			return nil, nil, fmt.Errorf("failed to execute template: %s", output.Err)
 		}
 		return []byte(output.Result), output.Values, nil
-	case <-time.After(defaultRenderTimeout):
-		return nil, nil, fmt.Errorf(heredoc.Doc(`
-			rendering timed out after %s: known possible reasons for timeouts are:
-			- an unclosed variable block in an included template
-		`), defaultRenderTimeout.String())
+	case <-time.After(ctx.Timeout):
+		return nil, nil, fmt.Errorf("rendering timed out after %s", ctx.Timeout.String())
 	}
 }
 
@@ -104,6 +87,10 @@ func getValues(values []Values) (map[string]interface{}, error) {
 			if err := yaml.Unmarshal(value.Data, &layer); err != nil {
 				return nil, fmt.Errorf("failed to unmarshal YAML context: %s", err)
 			}
+		case "toml":
+			if err := toml.Unmarshal(value.Data, &layer); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal TOML context: %s", err)
+			}
 		default:
 			return nil, fmt.Errorf("provided context has an unsupported type: %v", value.Type)
 		}
@@ -119,26 +106,38 @@ func getValues(values []Values) (map[string]interface{}, error) {
 	return mergedValues, nil
 }
 
-func getTemplate(ctx *Context, environment *gonja.Environment) (*exec.Template, error) {
-	file, err := environment.Loader.Get(path.Base(ctx.Template.Location))
+func parseTemplate(ctx *Context) (*exec.Template, error) {
+	gonjaConfig := config.New()
+
+	gonjaConfig.BlockStartString = ctx.Configuration.Delimiters.BlockStart
+	gonjaConfig.BlockEndString = ctx.Configuration.Delimiters.BlockEnd
+	gonjaConfig.VariableStartString = ctx.Configuration.Delimiters.VariableStart
+	gonjaConfig.VariableEndString = ctx.Configuration.Delimiters.VariableEnd
+	gonjaConfig.CommentStartString = ctx.Configuration.Delimiters.CommentStart
+	gonjaConfig.CommentEndString = ctx.Configuration.Delimiters.CommentEnd
+	gonjaConfig.LeftStripBlocks = ctx.Configuration.LeftStripBlocks
+	gonjaConfig.TrimBlocks = ctx.Configuration.TrimBlocks
+
+	gonjaConfig.StrictUndefined = ctx.Configuration.StrictUndefined
+
+	environment := gonja.DefaultEnvironment
+
+	environment.Filters.Update(Filters)
+	environment.Tests.Update(Tests)
+	environment.Context.Update(Globals)
+
+	fileSystemLoader, err := loaders.NewFileSystemLoader(ctx.Source.Directory)
 	if err != nil {
-		return nil, fmt.Errorf("error loading file: %s", err)
+		return nil, fmt.Errorf("failed to create a file system loader: %v", err)
 	}
 
-	buffer, err := ioutil.ReadAll(file)
+	rootID := fmt.Sprintf("root-%s", string(sha256.New().Sum([]byte(ctx.Source.Template))))
+	shiftedLoader, err := loaders.NewShiftedLoader(rootID, bytes.NewBufferString(ctx.Source.Template), fileSystemLoader)
 	if err != nil {
-		return nil, fmt.Errorf("error reading template: %s", err)
+		return nil, fmt.Errorf("failed to create a shifted loader: %v", err)
 	}
 
-	bundle := string(buffer)
-	if ctx.Template.Header != "" {
-		bundle = ctx.Template.Header + "\n" + bundle
-	}
-	if ctx.Template.Footer != "" {
-		bundle = bundle + "\n" + ctx.Template.Footer
-	}
-
-	return exec.NewTemplate(ctx.Template.Location, bundle, environment.EvalConfig)
+	return exec.NewTemplate(rootID, gonjaConfig, shiftedLoader, environment)
 }
 
 func validate(values map[string]interface{}, schemas map[string]json.RawMessage) error {
@@ -169,26 +168,4 @@ func validate(values map[string]interface{}, schemas map[string]json.RawMessage)
 	}
 
 	return nil
-}
-
-func getEnvironment(ctx *Context) (*gonja.Environment, error) {
-	gonjaConfig := config.DefaultConfig
-
-	gonjaConfig.BlockStartString = ctx.Configuration.Delimiters.BlockStart
-	gonjaConfig.BlockEndString = ctx.Configuration.Delimiters.BlockEnd
-	gonjaConfig.VariableStartString = ctx.Configuration.Delimiters.VariableStart
-	gonjaConfig.VariableEndString = ctx.Configuration.Delimiters.VariableEnd
-	gonjaConfig.CommentStartString = ctx.Configuration.Delimiters.CommentStart
-	gonjaConfig.CommentEndString = ctx.Configuration.Delimiters.CommentEnd
-
-	gonjaConfig.StrictUndefined = ctx.Configuration.StrictUndefined
-
-	loader, err := loaders.NewFileSystemLoader(path.Dir(ctx.Template.Location))
-	if err != nil {
-		return nil, fmt.Errorf("failed get a file system loader: %v", err)
-	}
-
-	environment := gonja.NewEnvironment(gonjaConfig, loader)
-
-	return environment, nil
 }

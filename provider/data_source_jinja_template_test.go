@@ -1,523 +1,553 @@
-package jinja
+package jinja_test
 
 import (
-	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
-	"regexp"
-	"testing"
+	"strconv"
 
 	"github.com/MakeNowJust/heredoc"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+
+	. "github.com/onsi/ginkgo/v2"
 )
 
-// Args:
-// - prefix [default is "tmp-"]
-// - content [default is ""]
-// - directory [default is current working directory]
-// Returns:
-// - name of the file
-// - content of the file
-// - path to containing folder
-// - callable to delete the file.
-func mustCreateFile(args ...string) (string, string, string, func()) {
-	if len(args) > 3 || len(args) == 0 {
-		panic("mustCreateFile takes up to 3 arguments: prefix, content, directory")
-	}
-	var prefix, content, directory string
-	switch len(args) {
-	case 3:
-		directory = args[2]
-		fallthrough
-	case 2:
-		content = args[1]
-		fallthrough
-	case 1:
-		prefix = args[0]
-	case 0:
-		prefix = "tmp-"
-	}
-
-	file, err := ioutil.TempFile(directory, prefix)
-	if err != nil {
-		panic(err)
-	}
-	_, err = file.WriteString(content)
-	if err != nil {
-		panic(err)
-	}
-
-	return path.Base(file.Name()), content, path.Dir(file.Name()), func() { os.Remove(file.Name()) }
-}
-
-func must(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
-func TestJinjaTemplateSimple(t *testing.T) {
-	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
-	{% if "foo" in "foo bar" %}
-	show within loop!
-	{% endif %}
-	`))
-	defer remove()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProviderFactories: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: heredoc.Doc(`
-				data "jinja_template" "render" {
-					template = "` + path.Join(dir, template) + `"
-				}`),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
-					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
-						expected := heredoc.Doc(`
-
-						show within loop!
-
-						`)
-						if expected != got {
-							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
-						}
-						return nil
-					}),
-				),
-			},
-		},
+var _ = Context("data \"jinja_template\" \"test\" { ... }", func() {
+	var (
+		terraformCode = new(string)
+	)
+	BeforeEach(func() {
+		*terraformCode = heredoc.Doc(`
+			provider "jinja" {}
+		`)
 	})
-}
 
-func TestJinjaTemplateWithInclude(t *testing.T) {
-	nested, expected, dir, remove_nested := mustCreateFile("nested", heredoc.Doc(`
-	I am nested !
-	`))
-	defer remove_nested()
+	Context("when the template is including a file", func() {
+		const (
+			includedContent = "this is the included template"
+		)
+		var (
+			file *os.File
+		)
+		BeforeEach(func() {
+			file = nil
+		})
+		AfterEach(func() {
+			if file != nil {
+				os.RemoveAll(file.Name())
+			}
+		})
+		Context("when the include is relative", func() {
+			BeforeEach(func() {
+				directory := os.TempDir()
 
-	template, _, _, remove_template := mustCreateFile(t.Name(), `{% include "`+nested+`" %}`, dir)
-	defer remove_template()
+				file = MustReturn(os.CreateTemp(directory, ""))
+				_ = MustReturn(file.WriteString(includedContent))
 
-	resource.UnitTest(t, resource.TestCase{
-		ProviderFactories: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: heredoc.Doc(`
-				data "jinja_template" "render" {
-					template = "` + path.Join(dir, template) + `"
-				}`),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
-					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
-						if expected != got {
-							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
+				*terraformCode = heredoc.Doc(`
+					data "jinja_template" "test" {
+						source {
+							template  = "{% include './` + path.Base(file.Name()) + `' %}"
+							directory = "` + directory + `"
 						}
-						return nil
-					}),
-				),
-			},
-		},
-	})
-}
-
-func TestJinjaTemplateOtherDelimiters(t *testing.T) {
-	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
-	|##- if "foo" in "foo bar" ##|
-	I am cornered
-	|##- endif ##|
-	<< "but pointy" >>
-	[# "and can be invisible!" #]
-	`))
-	defer remove()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProviderFactories: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: heredoc.Doc(`
-				data "jinja_template" "render" {
-					template = "` + path.Join(dir, template) + `"
-					delimiters {
-						block_start = "|##"
-						block_end = "##|"
-						variable_start = "<<"
-						variable_end = ">>"
-						comment_start = "[#"
-						comment_end = "#]"
 					}
-				}`),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
-					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
-						expected := heredoc.Doc(`
+				`)
+			})
+			itShouldSetTheExpectedResult(terraformCode, includedContent)
+		})
+		Context("when the include is absolute", func() {
+			BeforeEach(func() {
+				file = MustReturn(os.CreateTemp("", ""))
+				_ = MustReturn(file.WriteString(includedContent))
 
-						I am cornered
-						but pointy
-
-						`)
-						if expected != got {
-							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
+				*terraformCode = heredoc.Doc(`
+					data "jinja_template" "test" {
+						source {
+							template  = "{% include '` + file.Name() + `' %}"
+							directory = path.module
 						}
-						return nil
-					}),
-				),
-			},
-		},
+					}
+				`)
+			})
+			itShouldSetTheExpectedResult(terraformCode, includedContent)
+		})
+		Context("when the include is missing", func() {
+			BeforeEach(func() {
+				*terraformCode = heredoc.Doc(`
+					data "jinja_template" "test" {
+						source {
+							template  = "{% include '/tmp/does/not/exist' %}"
+							directory = path.module
+						}
+					}
+				`)
+			})
+			itShouldFailToRender(terraformCode, "Error: failed to render context: .* stat /tmp/does/not: no such file or directory")
+
+			Context("when the include statement has `ignore missing`", func() {
+				BeforeEach(func() {
+					*terraformCode = heredoc.Doc(`
+						data "jinja_template" "test" {
+							source {
+								template  = "this is just the root template{% include '/tmp/does/not/exist' ignore missing %}"
+								directory = path.module
+							}
+						}
+					`)
+				})
+				itShouldSetTheExpectedResult(terraformCode, "this is just the root template")
+			})
+		})
 	})
-}
 
-func TestJinjaTemplateWithContextJSON(t *testing.T) {
-	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
-	This is a very nested {{ top.middle.bottom.field }}
-	And this is an integer: {{ integer }}
-	`))
-	defer remove()
+	Context("when using `left_strip_blocks`", func() {
+		var (
+			leftStripBlocks = new(bool)
+		)
+		JustBeforeEach(func() {
+			*terraformCode = heredoc.Doc(`
+				data "jinja_template" "test" {
+					left_strip_blocks = ` + strconv.FormatBool(*leftStripBlocks) + `
+					source {
+						template  = "\t  {% set _ = 'foo' %}test"
+						directory = path.module
+					}
+				}
+			`)
+		})
+		Context("when `left_strip_blocks = false`", func() {
+			BeforeEach(func() {
+				*leftStripBlocks = false
+			})
 
-	resource.UnitTest(t, resource.TestCase{
-		ProviderFactories: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: heredoc.Doc(`
-				data "jinja_template" "render" {
-					template = "` + path.Join(dir, template) + `"
+			itShouldSetTheExpectedResult(terraformCode, "\t  test")
+
+			Context("but `left_strip_blocks = true` at the provider level", func() {
+				JustBeforeEach(func() {
+					*terraformCode = heredoc.Doc(`
+						provider jinja {
+							left_strip_blocks = true
+						}
+						` + *terraformCode + `
+					`)
+				})
+				itShouldSetTheExpectedResult(terraformCode, "\t  test")
+			})
+		})
+		Context("when `left_strip_blocks = true`", func() {
+			BeforeEach(func() {
+				*leftStripBlocks = true
+			})
+			itShouldSetTheExpectedResult(terraformCode, "test")
+
+			Context("but `left_strip_blocks = false` at the provider level", func() {
+				JustBeforeEach(func() {
+					*terraformCode = heredoc.Doc(`
+						provider jinja {
+							left_strip_blocks = false
+						}
+						` + *terraformCode + `
+					`)
+				})
+				itShouldSetTheExpectedResult(terraformCode, "test")
+			})
+		})
+	})
+
+	Context("when using `trim_blocks`", func() {
+		var (
+			trimBlocks = new(bool)
+		)
+		JustBeforeEach(func() {
+			*terraformCode = heredoc.Doc(`
+				data "jinja_template" "test" {
+					trim_blocks = ` + strconv.FormatBool(*trimBlocks) + `
+					source {
+						template  = <<-EOF
+							{% if "foo" in "foo bar" %}
+							test
+							{%- endif -%}
+						EOF
+						directory = path.module
+					}
+				}
+			`)
+		})
+		Context("when `trim_blocks = false`", func() {
+			BeforeEach(func() {
+				*trimBlocks = false
+			})
+
+			itShouldSetTheExpectedResult(terraformCode, "\ntest")
+
+			Context("but `trim_blocks = true` at the provider level", func() {
+				JustBeforeEach(func() {
+					*terraformCode = heredoc.Doc(`
+						provider jinja {
+							trim_blocks = true
+						}
+						` + *terraformCode + `
+					`)
+				})
+				itShouldSetTheExpectedResult(terraformCode, "\ntest")
+			})
+		})
+		Context("when `trim_blocks = true`", func() {
+			BeforeEach(func() {
+				*trimBlocks = true
+			})
+			itShouldSetTheExpectedResult(terraformCode, "test")
+
+			Context("but `trim_blocks = false` at the provider level", func() {
+				JustBeforeEach(func() {
+					*terraformCode = heredoc.Doc(`
+						provider jinja {
+							trim_blocks = false
+						}
+						` + *terraformCode + `
+					`)
+				})
+				itShouldSetTheExpectedResult(terraformCode, "test")
+			})
+		})
+	})
+
+	Context("when using `strict_undefined`", func() {
+		var (
+			strictUndefined = new(bool)
+		)
+		JustBeforeEach(func() {
+			*terraformCode = heredoc.Doc(`
+				data "jinja_template" "test" {
+					strict_undefined = ` + strconv.FormatBool(*strictUndefined) + `
 					context {
 						type = "json"
-						data = jsonencode({
-							top = {
-								middle = {
-									bottom = {
-										field = "surprise!"
+						data = jsonencode({ dict = { yes = true }})
+					}
+					source {
+						template  = "Nothing: {{ dict.nope }}"
+						directory = path.module
+					}
+				}
+			`)
+		})
+		Context("when `strict_undefined = false`", func() {
+			BeforeEach(func() {
+				*strictUndefined = false
+			})
+
+			itShouldSetTheExpectedResult(terraformCode, "Nothing: ")
+
+			Context("but `strict_undefined = true` at the provider level", func() {
+				JustBeforeEach(func() {
+					*terraformCode = heredoc.Doc(`
+						provider jinja {
+							strict_undefined = true
+						}
+						` + *terraformCode + `
+					`)
+				})
+				itShouldSetTheExpectedResult(terraformCode, "Nothing: ")
+			})
+		})
+		Context("when `strict_undefined = true`", func() {
+			BeforeEach(func() {
+				*strictUndefined = true
+			})
+			itShouldFailToRender(terraformCode, ".* Unable to evaluate dict.nope: attribute 'nope' not found")
+
+			Context("but `strict_undefined = false` at the provider level", func() {
+				JustBeforeEach(func() {
+					*terraformCode = heredoc.Doc(`
+						provider jinja {
+							strict_undefined = false
+						}
+						` + *terraformCode + `
+					`)
+				})
+				itShouldFailToRender(terraformCode, ".* Unable to evaluate dict.nope: attribute 'nope' not found")
+			})
+		})
+	})
+
+	Context("when setting different `delimiters`", func() {
+		BeforeEach(func() {
+			*terraformCode = heredoc.Doc(`
+				data "jinja_template" "test" {
+					source {
+						template  = <<-EOF
+							|##- if "foo" in "foo bar" ##|
+							I am cornered
+							|##- endif ##|
+							<< "but pointy" >>
+							[# "and can be invisible!" #]
+						EOF
+						directory = path.module
+					}
+					delimiters {
+ 						block_start = "|##"
+ 						block_end = "##|"
+ 						variable_start = "<<"
+ 						variable_end = ">>"
+ 						comment_start = "[#"
+ 						comment_end = "#]"
+ 					}
+				}
+			`)
+		})
+		itShouldSetTheExpectedResult(terraformCode, heredoc.Doc(`
+
+			I am cornered
+			but pointy
+			
+		`))
+
+		Context("when `delimiters` are already set at the provider level", func() {
+			JustBeforeEach(func() {
+				*terraformCode = heredoc.Doc(`
+					provider jinja {
+						delimiters {
+ 							block_start = "[%"
+ 							block_end = "%]"
+ 							variable_start = "[["
+ 							variable_end = "]]"
+ 							comment_start = "/*"
+ 							comment_end = "*/"
+ 						}
+					}
+					` + *terraformCode + `
+				`)
+			})
+			itShouldSetTheExpectedResult(terraformCode, heredoc.Doc(`
+
+				I am cornered
+				but pointy
+
+			`))
+		})
+	})
+
+	Context("when passing a `context`", func() {
+		Context("as YAML", func() {
+			BeforeEach(func() {
+				*terraformCode = heredoc.Doc(`
+					data "jinja_template" "test" {
+						source {
+							template  = <<-EOF
+								{{ data.integer }}
+								{{ data.string }}
+								{{ data.float }}
+								{{ data.boolean }}
+								{{ data.array[0] }}
+								{{ data.object["key"] }}
+							EOF
+							directory = path.module
+						}
+						context {
+							type = "yaml"
+							data = yamlencode({
+								data = {
+									integer = 123
+									string  = "str"
+									float 	= 1.23
+									boolean = true
+									array = [
+										"first item"
+									]
+									object = {
+										"key": "value"
 									}
 								}
+							})
+						}
+					}
+				`)
+			})
+			itShouldSetTheExpectedResult(terraformCode, heredoc.Doc(`
+				123
+				str
+				1.23
+				True
+				first item
+				value
+			`))
+		})
+		Context("as JSON", func() {
+			BeforeEach(func() {
+				*terraformCode = heredoc.Doc(`
+					data "jinja_template" "test" {
+						source {
+							template  = <<-EOF
+								{{ data.integer }}
+								{{ data.string }}
+								{{ data.float }}
+								{{ data.boolean }}
+								{{ data.array[0] }}
+								{{ data.object["key"] }}
+							EOF
+							directory = path.module
+						}
+						context {
+							type = "json"
+							data = jsonencode({
+								data = {
+									integer = 123
+									string  = "str"
+									float 	= 1.23
+									boolean = true
+									array = [
+										"first item"
+									]
+									object = {
+										"key": "value"
+									}
+								}
+							})
+						}
+					}
+				`)
+			})
+			itShouldSetTheExpectedResult(terraformCode, heredoc.Doc(`
+				123
+				str
+				1.23
+				True
+				first item
+				value
+			`))
+			Context("when the layer has an integer", func() {
+				BeforeEach(func() {
+					*terraformCode = heredoc.Doc(`
+						data "jinja_template" "test" {
+							source {
+								template  = "{{ value }}"
+								directory = path.module
 							}
-							integer = 123
-						})
-					}
-				}`),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
-					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
-						expected := heredoc.Doc(`
-						This is a very nested surprise!
-						And this is an integer: 123
-						`)
-						if expected != got {
-							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
-						}
-						return nil
-					}),
-					resource.TestCheckResourceAttrWith("data.jinja_template.render", "merged_context", func(got string) error {
-						expected := heredoc.Doc(`{"integer":123,"top":{"middle":{"bottom":{"field":"surprise!"}}}}`)
-						if expected != got {
-							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
-						}
-						return nil
-					}),
-				),
-			},
-		},
-	})
-}
-
-func TestJinjaTemplateWithContextYAML(t *testing.T) {
-	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
-	The service name is {{ name }}
-	{%- if flags %}
-	The flags in the file are:
-		{%- for flag in flags %}
-	- {{ flag }}
-		{%- endfor %}
-	{% endif %}
-	`))
-	defer remove()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProviderFactories: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: heredoc.Doc(`
-				data "jinja_template" "render" {
-					template = "` + path.Join(dir, template) + `"
-					context {
-						type = "yaml"
-						data = yamlencode({
-							name = "NATO"
-							flags = [
-								"fr",
-								"us",
-							]
-						})
-					}
-				}`),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
-					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
-						expected := heredoc.Doc(`
-						The service name is NATO
-						The flags in the file are:
-						- fr
-						- us
-
-						`)
-						if expected != got {
-							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
-						}
-						return nil
-					}),
-				),
-			},
-		},
-	})
-}
-
-func TestJinjaTemplateWithMultipleContext(t *testing.T) {
-	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
-	The service name is {{ name }} in {{ country }}
-	{%- if flags %}
-	The flags in the file are:
-		{%- for flag in flags %}
-	- {{ flag }}
-		{%- endfor %}
-	{% endif %}
-	`))
-	defer remove()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProviderFactories: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: heredoc.Doc(`
-				data "jinja_template" "render" {
-					template = "` + path.Join(dir, template) + `"
-					context {
-						type = "yaml"
-						data = yamlencode({
-							name = "NATO"
-							country = "the US"
-							flags = [
-								"fr",
-								"us",
-							]
-						})
-					}
-					context {
-						type = "json"
-						data = jsonencode({
-							name = "overridden"
-							flags = []
-						})
-					}
-				}`),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
-					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
-						expected := heredoc.Doc(`
-						The service name is overridden in the US
-						`)
-						if expected != got {
-							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
-						}
-						return nil
-					}),
-				),
-			},
-		},
-	})
-}
-
-func TestJinjaTemplateOtherDelimitersAtProviderLevel(t *testing.T) {
-	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
-	[%- if "foo" in "foo bar" %]
-	I am cornered
-	[%- endif %]
-	<< "but pointy" >>
-	|# "and can be invisible!" #|
-	`))
-	defer remove()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProviderFactories: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: heredoc.Doc(`
-				provider "jinja" {
-					delimiters {
-						variable_start = "<<"
-						variable_end = ">>"
-						comment_start = "|#"
-						comment_end = "#|"
-					}
-				}
-				data "jinja_template" "render" {
-					template = "` + path.Join(dir, template) + `"
-					delimiters {
-						block_start = "[%"
-						block_end = "%]"
-					}
-				}`),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
-					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
-						expected := heredoc.Doc(`
-
-						I am cornered
-						but pointy
-
-						`)
-						if expected != got {
-							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
-						}
-						return nil
-					}),
-				),
-			},
-		},
-	})
-}
-
-func TestJinjaTemplateWithPathContext(t *testing.T) {
-	ctx, _, dir, remove_context := mustCreateFile("nested", heredoc.Doc(`
-	name: remote-context
-	`))
-	defer remove_context()
-
-	template, _, _, remove_template := mustCreateFile(t.Name(), heredoc.Doc(`
-	The name field is: "{{ name }}"
-	`), dir)
-	defer remove_template()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProviderFactories: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: heredoc.Doc(`
-				data "jinja_template" "render" {
-					template = "` + path.Join(dir, template) + `"
-					context {
-						type = "yaml"
-						data = "` + path.Join(dir, ctx) + `"
-					}
-				}`),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
-					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
-						expected := heredoc.Doc(`
-						The name field is: "remote-context"
-						`)
-						if expected != got {
-							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
-						}
-						return nil
-					}),
-				),
-			},
-		},
-	})
-}
-
-func TestJinjaTemplateWithSchema(t *testing.T) {
-	schema, _, dir, remove_schema := mustCreateFile("nested", heredoc.Doc(`
-	{
-		"type": "object",
-		"required": [
-			"name",
-			"other"
-		],
-		"properties": {
-			"name": {
-				"type": "string"
-			},
-			"other": {
-				"type": "object",
-				"required": ["foo"],
-				"properties": {
-					"foo": {
-						"type": "string"
-					}
-				}
-			}
-	
-		}
-	}
-	`))
-	defer remove_schema()
-
-	template, _, _, remove_template := mustCreateFile(t.Name(), `The name field is: "{{ name }}"`, dir)
-	defer remove_template()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProviderFactories: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: heredoc.Doc(`
-				data "jinja_template" "render" {
-					template = "` + path.Join(dir, template) + `"
-					context {
-						type = "yaml"
-						data = yamlencode({
-							name = "schema"
-							other = {
-								"foo" = "bar"
+							context {
+								type = "json"
+								data = "{\"value\": 123}"
 							}
-						})
-					}
-					schema = "` + path.Join(dir, schema) + `"
-				}`),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
-					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
-						expected := `The name field is: "schema"`
-						if expected != got {
-							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
 						}
-						return nil
-					}),
-				),
-			},
-		},
-	})
-}
+					`)
+				})
+				itShouldSetTheExpectedResult(terraformCode, "123")
+			})
+		})
+		Context("as TOML", func() {
+			BeforeEach(func() {
+				*terraformCode = heredoc.Doc(`
+					data "jinja_template" "test" {
+						source {
+							template  = <<-EOF
+								{{ data.integer }}
+								{{ data.string }}
+								{{ data.float }}
+								{{ data.boolean }}
+								{{ data.array[0] }}
+								{{ data.object["key"] }}
+							EOF
+							directory = path.module
+						}
+						context {
+							type = "toml"
+							data = <<-EOF
+								[data]
+								integer = 123
+								string = "str"
+								float = 1.23
+								boolean = true
+								array = [
+								  "first item"
+								]
 
-func TestJinjaTemplateWithValidation(t *testing.T) {
-	schema, _, dir, remove_schema := mustCreateFile("nested", heredoc.Doc(`
-	{
-		"type": "object",
-		"required": [
-			"name",
-			"other"
-		],
-		"properties": {
-			"name": {
-				"type": "string"
-			},
-			"other": {
-				"type": "object",
-				"required": ["foo"],
-				"properties": {
-					"foo": {
-						"type": "string"
+								[data.object]
+								key = "value"
+							EOF
+						}
 					}
-				}
-			}
-	
-		}
-	}
-	`))
-	defer remove_schema()
+				`)
+			})
+			itShouldSetTheExpectedResult(terraformCode, heredoc.Doc(`
+				123
+				str
+				1.23
+				True
+				first item
+				value
+			`))
 
-	template, _, _, remove_template := mustCreateFile(t.Name(), `The name field is: "{{ name }}"`, dir)
-	defer remove_template()
+		})
+		Context("when passing multiple layers", func() {
+			BeforeEach(func() {
+				*terraformCode = heredoc.Doc(`
+				 	data "jinja_template" "test" {
+						source {
+							template  = <<-EOF
+								The service name is {{ name }} in {{ country }}
+								{%- if flags %}
+								The flags in the file are:
+									{%- for flag in flags %}
+								- {{ flag }}
+									{%- endfor %}
+								{% endif %}
+							EOF
+							directory = path.module
+						}
+						
+						context {
+							type = "yaml"
+							data = yamlencode({
+								name = "NATO"
+								country = "the US"
+								flags = [
+									"fr",
+									"us",
+								]
+							})
+						}
+						context {
+							type = "json"
+							data = jsonencode({
+								name = "overridden"
+								flags = []
+							})
+						}
+					}
+				`)
+			})
+			itShouldSetTheExpectedResult(terraformCode, heredoc.Doc(`
+				The service name is overridden in the US
+			`))
+			Context("when merging an object on an integer", func() {
+				BeforeEach(func() {
+					*terraformCode = heredoc.Doc(`
+						data "jinja_template" "test" {
+							source {
+								template  = "{{ value.nested }}"
+								directory = path.module
+							}
+							context {
+								type = "json"
+								data = "{\"value\": 1}"
+							}
+							context {
+								type = "json"
+								data = "{\"value\": {\"nested\": 2}}"
+							}
+						}
+					`)
+				})
+				itShouldSetTheExpectedResult(terraformCode, "2")
+			})
+		})
+	})
 
-	resource.UnitTest(t, resource.TestCase{
-		ProviderFactories: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: heredoc.Doc(`
-				data "jinja_template" "render" {
-					template = "` + path.Join(dir, template) + `"
+	Context("when using `validation`", func() {
+		BeforeEach(func() {
+			*terraformCode = heredoc.Doc(`
+				data "jinja_template" "test" {
+					source {
+						template  = "The name field is: \"{{ name }}\""
+						directory = path.module
+					}
 					context {
 						type = "yaml"
 						data = yamlencode({
@@ -528,787 +558,308 @@ func TestJinjaTemplateWithValidation(t *testing.T) {
 						})
 					}
 					validation = {
-						test = "` + path.Join(dir, schema) + `"
-					}
-				}`),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
-					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
-						expected := `The name field is: "schema"`
-						if expected != got {
-							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
-						}
-						return nil
-					}),
-				),
-			},
-		},
-	})
-}
-
-func TestJinjaTemplateWithInlineSchema(t *testing.T) {
-	template, _, dir, remove := mustCreateFile(t.Name(), `The name field is: "{{ name }}"`)
-	defer remove()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProviderFactories: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: heredoc.Doc(`
-				data "jinja_template" "render" {
-					template = "` + path.Join(dir, template) + `"
-					context {
-						type = "yaml"
-						data = yamlencode({
-							name = "schema"
-						})
-					}
-					schema = <<-EOF
-					{
-						"type": "object",
-						"required": [
-							"name"
-						],
-						"properties": {
-							"name": {
-								"type": "string"
+						schema = <<-EOF
+							{
+								"type": "object",
+								"required": [
+									"name",
+									"other"
+								],
+								"properties": {
+									"name": {
+										"type": "string"
+									},
+									"other": {
+										"type": "object",
+										"required": ["foo"],
+										"properties": {
+											"foo": {
+												"type": "string"
+											}
+										}
+									}
+								}
 							}
-						}
-					}
-					EOF
-				}`),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
-					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
-						expected := `The name field is: "schema"`
-						if expected != got {
-							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
-						}
-						return nil
-					}),
-				),
-			},
-		},
-	})
-}
-
-func TestJinjaTemplateWithValidationThatFails(t *testing.T) {
-	schema, _, dir, remove_schema := mustCreateFile("nested", heredoc.Doc(`
-	{
-		"type": "object",
-		"required": [
-			"name"
-		],
-		"properties": {
-			"name": {
-				"type": "string"
-			}
-		}
-	}
-	`))
-	defer remove_schema()
-
-	template, _, _, remove_template := mustCreateFile(t.Name(), heredoc.Doc(`
-	The name field is: "{{ name }}"
-	`), dir)
-	defer remove_template()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProviderFactories: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: heredoc.Doc(`
-				data "jinja_template" "render" {
-					template = "` + path.Join(dir, template) + `"
-					context {
-						type = "yaml"
-						data = yamlencode({})
-					}
-					validation = {
-						test = "` + path.Join(dir, schema) + `"
-					}
-				}`),
-				ExpectError: regexp.MustCompile("failed to pass 'test' JSON schema validation: jsonschema: '' does not validate with .*: missing properties: 'name'"),
-			},
-		},
-	})
-}
-func TestJinjaTemplateWithSchemaThatFails(t *testing.T) {
-	schema, _, dir, remove_schema := mustCreateFile("nested", heredoc.Doc(`
-	{
-		"type": "object",
-		"required": [
-			"name"
-		],
-		"properties": {
-			"name": {
-				"type": "string"
-			}
-		}
-	}
-	`))
-	defer remove_schema()
-
-	template, _, _, remove_template := mustCreateFile(t.Name(), heredoc.Doc(`
-	The name field is: "{{ name }}"
-	`), dir)
-	defer remove_template()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProviderFactories: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: heredoc.Doc(`
-				data "jinja_template" "render" {
-					template = "` + path.Join(dir, template) + `"
-					context {
-						type = "yaml"
-						data = yamlencode({})
-					}
-					schema = "` + path.Join(dir, schema) + `"
-				}`),
-				ExpectError: regexp.MustCompile("failed to pass '1st' JSON schema validation: jsonschema: '' does not validate with .*: missing properties: 'name'"),
-			},
-		},
-	})
-}
-
-func TestJinjaTemplateWithFooter(t *testing.T) {
-	template, _, dir, remove := mustCreateFile(t.Name(), "body")
-	defer remove()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProviderFactories: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: heredoc.Doc(`
-				data "jinja_template" "render" {
-					template = "` + path.Join(dir, template) + `"
-					footer = "footer"
-				}`),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
-					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
-						expected := heredoc.Doc(`
-						body
-						footer`)
-						if expected != got {
-							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
-						}
-						return nil
-					}),
-				),
-			},
-		},
-	})
-}
-
-func TestJinjaTemplateWithHeaderMacro(t *testing.T) {
-	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
-	{{ verbose(true) }}
-	`))
-	defer remove()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProviderFactories: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: heredoc.Doc(`
-				data "jinja_template" "render" {
-					template = "` + path.Join(dir, template) + `"
-					header = <<-EOF
-						{%- macro verbose(trigger) -%}
-						{%- if trigger -%}
-						This should be visible!
-						{%- endif -%}
-						{%- endmacro -%}
-					EOF
-				}`),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
-					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
-						expected := heredoc.Doc(`
-						This should be visible!
-						`)
-						if expected != got {
-							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
-						}
-						return nil
-					}),
-				),
-			},
-		},
-	})
-}
-
-func TestGonjaForLoop(t *testing.T) {
-	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
-	{%- for key, value in dictionary %}
-	{{ key }} = {{ value }}
-	{%- endfor %}
-	`))
-	defer remove()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProviderFactories: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: heredoc.Doc(`
-				data "jinja_template" "render" {
-					template = "` + path.Join(dir, template) + `"
-					context {
-						type = "yaml"
-						data = <<-EOF
-						dictionary:
-						  foo: bar
-						  tic: toc
 						EOF
-					}
-				}`),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
-					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
-						expected := heredoc.Doc(`
-
-						foo = bar
-						tic = toc
-						`)
-						if expected != got {
-							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
-						}
-						return nil
-					}),
-				),
-			},
-		},
-	})
-}
-
-func TestGonjaNoneValue(t *testing.T) {
-	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
-	{{ None is undefined }}
-	{{ nil is defined }}
-	{% set var = None %}{{ var }}
-	`))
-	defer remove()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProviderFactories: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: heredoc.Doc(`
-				data "jinja_template" "render" {
-					template = "` + path.Join(dir, template) + `"
-					strict_undefined = true
-				}`),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
-					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
-						expected := heredoc.Doc(`
-						True
-						False
-
-						`)
-						if expected != got {
-							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
-						}
-						return nil
-					}),
-				),
-			},
-		},
-	})
-}
-
-func TestJinjaTemplateWithIntegerInYAMLContext(t *testing.T) {
-	template, _, dir, remove_template := mustCreateFile(t.Name(), `The int field is: {{ integer }}`)
-	defer remove_template()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProviderFactories: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: heredoc.Doc(`
-				data "jinja_template" "render" {
-					template = "` + path.Join(dir, template) + `"
-					context {
-						type = "yaml"
-						data = yamlencode({
-							integer = 123
-						})
-					}
-				}`),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
-					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
-						expected := `The int field is: 123`
-						if expected != got {
-							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
-						}
-						return nil
-					}),
-				),
-			},
-		},
-	})
-}
-
-func TestJinjaTemplateWithSchemaAndSchemas(t *testing.T) {
-	schema, _, dir, remove_schema := mustCreateFile("nested", heredoc.Doc(`
-	{
-		"type": "object",
-		"required": [
-			"name",
-			"other"
-		],
-		"properties": {
-			"name": {
-				"type": "string"
-			},
-			"other": {
-				"type": "object",
-				"required": ["foo"],
-				"properties": {
-					"foo": {
-						"type": "string"
 					}
 				}
-			}
-		}
-	}
-	`))
-	defer remove_schema()
+			`)
+		})
+		itShouldSetTheExpectedResult(terraformCode, "The name field is: \"schema\"")
 
-	template, _, _, remove_template := mustCreateFile(t.Name(), heredoc.Doc(`
-	The name field is: "{{ name }}"
-	`), dir)
-	defer remove_template()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProviderFactories: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: heredoc.Doc(`
-				data "jinja_template" "render" {
-					template = "` + path.Join(dir, template) + `"
-					context {
-						type = "yaml"
-						data = yamlencode({
-							name = "schema"
-							other = {
-								"foo" = "bar"
-							}
-						})
-					}
-					schema = "` + path.Join(dir, schema) + `"
-					schemas = ["` + path.Join(dir, schema) + `"]
-				}`),
-				ExpectError: regexp.MustCompile("Error: Conflicting configuration arguments"),
-			},
-		},
-	})
-}
-
-func TestJinjaTemplateWithMultipleSchemas(t *testing.T) {
-	schema, _, dir, remove_schema := mustCreateFile("nested", heredoc.Doc(`
-	{
-		"type": "object",
-		"required": [
-			"name"
-		],
-		"properties": {
-			"name": {
-				"type": "string"
-			}
-		}
-	}
-	`))
-	defer remove_schema()
-
-	template, _, _, remove_template := mustCreateFile(t.Name(), `The name field is: "{{ name }}"`, dir)
-	defer remove_template()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProviderFactories: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: heredoc.Doc(`
-				data "jinja_template" "render" {
-					template = "` + path.Join(dir, template) + `"
-					context {
-						type = "yaml"
-						data = yamlencode({
-							name = "schema"
-							other = {
-								"foo" = "bar"
-							}
-						})
-					}
-					schemas = [
-						"` + path.Join(dir, schema) + `",
-						<<-EOF
-						{
-							"type": "object",
-							"required": [
-								"other"
-							],
-							"properties": {
-								"other": {
+		Context("when the validation fails", func() {
+			BeforeEach(func() {
+				*terraformCode = heredoc.Doc(`
+					data "jinja_template" "test" {
+						source {
+							template  = "{{ property }}"
+							directory = path.module
+						}
+						context {
+							type = "yaml"
+							data = yamlencode({
+								property = 123 
+							})
+						}
+						validation = {
+							test = <<-EOF
+								{
 									"type": "object",
-									"required": ["foo"],
+									"required": [
+										"property"
+									],
 									"properties": {
-										"foo": {
+										"property": {
 											"type": "string"
 										}
 									}
 								}
-							}
+							EOF
 						}
-						EOF
-					]
-				}`),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
-					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
-						expected := `The name field is: "schema"`
-						if expected != got {
-							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
-						}
-						return nil
-					}),
-				),
-			},
-		},
-	})
-}
-
-func TestJinjaTemplateWithMultipleSchemasWhenOneIsFailing(t *testing.T) {
-	schema, _, dir, remove_schema := mustCreateFile("nested", heredoc.Doc(`
-	{
-		"type": "object",
-		"required": [
-			"name"
-		],
-		"properties": {
-			"name": {
-				"type": "string"
-			}
-		}
-	}
-	`))
-	defer remove_schema()
-
-	template, _, _, remove_template := mustCreateFile(t.Name(), heredoc.Doc(`
-	The name field is: "{{ name }}"
-	`), dir)
-	defer remove_template()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProviderFactories: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: heredoc.Doc(`
-				data "jinja_template" "render" {
-					template = "` + path.Join(dir, template) + `"
-					context {
-						type = "yaml"
-						data = yamlencode({
-							name = 123
-							other = {
-								"foo" = "bar"
-							}
-						})
 					}
-					schemas = [
-						"` + path.Join(dir, schema) + `",
-						<<-EOF
+				`)
+			})
+			itShouldFailToRender(terraformCode, "failed to pass 'test' JSON schema validation: jsonschema: '/property' does not validate with file:///.*#/properties/property/type: expected string, but got number")
+		})
+
+		Context("when several schemas are passed", func() {
+			var (
+				firstSchema  = new(string)
+				secondSchema = new(string)
+			)
+			BeforeEach(func() {
+				*firstSchema = heredoc.Doc(`
+					<<-EOF
 						{
 							"type": "object",
-							"required": [
-								"other"
-							],
+							"required": ["name"],
 							"properties": {
-								"other": {
-									"type": "object",
-									"required": ["foo"],
-									"properties": {
-										"foo": {
-											"type": "string"
-										}
-									}
+								"name": {
+									"type": "string"
 								}
 							}
 						}
-						EOF
-					]
-				}`),
-				ExpectError: regexp.MustCompile("failed to pass '1st' JSON schema validation: jsonschema: '/name' does not validate with .*#/properties/name/type: expected string, but got number"),
-			},
-		},
-	})
-}
-
-func TestJinjaTemplateWithMultipleSchemasWhenMultipleAreFailing(t *testing.T) {
-	schema, _, dir, remove_schema := mustCreateFile("nested", heredoc.Doc(`
-	{
-		"type": "object",
-		"required": [
-			"name"
-		],
-		"properties": {
-			"name": {
-				"type": "string"
-			}
-		}
-	}
-	`))
-	defer remove_schema()
-
-	template, _, _, remove_template := mustCreateFile(t.Name(), heredoc.Doc(`
-	The name field is: "{{ name }}"
-	`), dir)
-	defer remove_template()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProviderFactories: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: heredoc.Doc(`
-				data "jinja_template" "render" {
-					template = "` + path.Join(dir, template) + `"
-					context {
-						type = "yaml"
-						data = yamlencode({
-							name = 123
-							other = "wrong"
-						})
-					}
-					schemas = [
-						"` + path.Join(dir, schema) + `",
-						<<-EOF
-						{
-							"type": "object",
-							"required": [
-								"other"
-							],
-							"properties": {
-								"other": {
-									"type": "object",
-									"required": ["foo"],
-									"properties": {
-										"foo": {
-											"type": "string"
-										}
-									}
-								}
-							}
-						}
-						EOF
-					]
-				}`),
-				ExpectError: regexp.MustCompile(heredoc.Doc(`
-				\s+failed to pass '1st' JSON schema validation: jsonschema: '/name' does not validate with .*#/properties/name/type: expected string, but got number
-				\s+failed to pass '2nd' JSON schema validation: jsonschema: '/other' does not validate with .*#/properties/other/type: expected object, but got string
-				`)),
-			},
-		},
-	})
-}
-
-func TestJinjaTemplateWithStrictUndefined(t *testing.T) {
-	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
-	This is a very nested {{ dict.missing }}
-
-	`))
-	defer remove()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProviderFactories: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: heredoc.Doc(`
-				data "jinja_template" "render" {
-					template = "` + path.Join(dir, template) + `"
-					context {
-						type = "json"
-						data = jsonencode({
-							top = {
-								other = "value"
-							}
-						})
-					}
-					strict_undefined = true
-				}`),
-				ExpectError: regexp.MustCompile(heredoc.Doc(`
-				Error: .* Unable to evaluate dict.missing: attribute 'missing' not found
-				`)),
-			},
-		},
-	})
-}
-
-func TestJinjaTemplateWithProviderStrictUndefined(t *testing.T) {
-	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
-	This is a very nested {{ dict.missing }}
-
-	`))
-	defer remove()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProviderFactories: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: heredoc.Doc(`
-				provider "jinja" {
-					strict_undefined = true
-				}
-				data "jinja_template" "render" {
-					template = "` + path.Join(dir, template) + `"
-					context {
-						type = "json"
-						data = jsonencode({
-							top = {
-								other = "value"
-							}
-						})
-					}
-				}`),
-				ExpectError: regexp.MustCompile(heredoc.Doc(`
-				Error: .* Unable to evaluate dict.missing: attribute 'missing' not found
-				`)),
-			},
-		},
-	})
-}
-
-func TestJinjaTemplateWithStrictUndefinedAtRootLevel(t *testing.T) {
-	template, _, dir, remove := mustCreateFile(t.Name(), heredoc.Doc(`
-	This is {{ missing }}
-
-	`))
-	defer remove()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProviderFactories: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: heredoc.Doc(`
-				data "jinja_template" "render" {
-					template = "` + path.Join(dir, template) + `"
-					context {
-						type = "json"
-						data = jsonencode({
-							top = {
-								other = "value"
-							}
-						})
-					}
-					strict_undefined = true
-				}`),
-				ExpectError: regexp.MustCompile(heredoc.Doc(`
-				Error: .* Unable to evaluate name "missing"
-				`)),
-			},
-		},
-	})
-}
-
-func TestJinjaWhenGonjaHangsForever(t *testing.T) {
-	template, _, dir, remove_template := mustCreateFile(t.Name(), heredoc.Doc(`
-	{{ "known bug of gonja which hangs forever if there's an unclosed string }}
-	`))
-	defer remove_template()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProviderFactories: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: heredoc.Doc(`
-				data "jinja_template" "render" {
-					template = "` + path.Join(dir, template) + `"
-				}`),
-				ExpectError: regexp.MustCompile(`Error:.* failed to parse template: Expected either a number, string, keyword or identifier. \(Line: 0 Col: 0, near "known bug of gonja which hangs forever if there's an unclosed string`),
-			},
-		},
-	})
-}
-
-func TestJinjaWhenGonjaPanics(t *testing.T) {
-	template, _, dir, remove_template := mustCreateFile(t.Name(), heredoc.Doc(`
-	{{ nil | panic }}
-	`))
-	defer remove_template()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProviderFactories: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: heredoc.Doc(`
-				data "jinja_template" "render" {
-					template = "` + path.Join(dir, template) + `"
-				}`),
-				ExpectError: regexp.MustCompile("Error: failed to render context: failed to execute template: a runtime error led gonja to panic: panic filter was called"),
-			},
-		},
-	})
-}
-
-func TestJinjaTemplateInlined(t *testing.T) {
-	resource.UnitTest(t, resource.TestCase{
-		ProviderFactories: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: heredoc.Doc(`
-				data "jinja_template" "render" {
-					template = <<-EOF
-					{%- if "foo" in "foo bar" -%}
-					Look at me!
-					{%- endif -%}
 					EOF
-				}`),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
-					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
-						expected := `Look at me!`
-						if expected != got {
-							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
+				`)
+				*secondSchema = heredoc.Doc(`
+					jsonencode({
+						type       = "object"
+						required   = ["other"]
+						properties = {
+							other = {
+								type = "integer"
+							}
 						}
-						return nil
-					}),
-				),
-			},
-		},
-	})
-}
+					})
+				`)
+			})
+			JustBeforeEach(func() {
+				*terraformCode = heredoc.Doc(`
+					data "jinja_template" "test" {
+						source {
+							template  = "name: \"{{ name }}\" | other: {{ other }}"
+							directory = path.module
+						}
+						context {
+							type = "yaml"
+							data = yamlencode({
+								name  = "schema"
+								other = 123
+							})
+						}
+						validation = {
+							first  = ` + *firstSchema + `
+							second = ` + *secondSchema + `
+						}
+					}
+				`)
+			})
+			itShouldSetTheExpectedResult(terraformCode, "name: \"schema\" | other: 123")
 
-func TestJinjaMergingObjectOnInteger(t *testing.T) {
-	resource.UnitTest(t, resource.TestCase{
-		ProviderFactories: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: heredoc.Doc(`
-				data "jinja_template" "render" {
-					context {
-						type = "json"
-						data = "{\"value\": 1}"
-					}
-					context {
-						type = "json"
-						data = "{\"value\": {\"nested\": 2}}"
-					}
-					template = "{{ value.nested }}"
-				}`),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.jinja_template.render", "id"),
-					resource.TestCheckResourceAttrWith("data.jinja_template.render", "result", func(got string) error {
-						expected := "2"
-						if expected != got {
-							return fmt.Errorf("\nexpected:\n=========\n%s\n=========\ngot:\n==========\n%s\n==========", expected, got)
-						}
-						return nil
-					}),
-				),
-			},
-		},
+			Context("when the first schema fails", func() {
+				BeforeEach(func() {
+					*firstSchema = heredoc.Doc(`
+						<<-EOF
+							{
+								"type": "object",
+								"required": ["name"],
+								"properties": {
+									"name": {
+										"type": "integer"
+									}
+								}
+							}
+						EOF
+					`)
+				})
+				itShouldFailToRender(terraformCode, "failed to pass 'first' JSON schema validation: jsonschema: '/name' does not validate with file:///.*#/properties/name/type: expected integer, but got string")
+			})
+			Context("when the second schema fails", func() {
+				BeforeEach(func() {
+					*secondSchema = heredoc.Doc(`
+						jsonencode({
+							type       = "object"
+							required   = ["other"]
+							properties = {
+								other = {
+									type = "string"
+								}
+							}
+						})
+					`)
+				})
+				itShouldFailToRender(terraformCode, "failed to pass 'second' JSON schema validation: jsonschema: '/other' does not validate with file:///.*#/properties/other/type: expected string, but got number")
+			})
+		})
 	})
-}
+
+	Context("when using legacy fields", func() {
+		Context("when using the `template` field", func() {
+			BeforeEach(func() {
+				*terraformCode = heredoc.Doc(`
+					data "jinja_template" "test" {
+						template = "{{ 'hello !' | capitalize }}"
+					}
+				`)
+			})
+			itShouldSetTheExpectedResult(terraformCode, "Hello !")
+
+			Context("and the template contains a relative include statement", func() {
+				var (
+					included *os.File
+				)
+				AfterEach(func() {
+					os.RemoveAll(included.Name())
+				})
+				BeforeEach(func() {
+					included = MustReturn(os.CreateTemp(MustReturn(os.Getwd()), ""))
+					MustReturn(included.WriteString("How are you ?"))
+					*terraformCode = heredoc.Doc(`
+						data "jinja_template" "test" {
+							template = "{{ 'hello !' | capitalize }} {% include './` + path.Base(included.Name()) + `' %}"
+						}
+					`)
+				})
+				itShouldSetTheExpectedResult(terraformCode, "Hello ! How are you ?")
+			})
+
+			Context("when the provided string is a path", func() {
+				var (
+					file      *os.File
+					directory = new(string)
+				)
+				AfterEach(func() {
+					if file != nil {
+						os.RemoveAll(file.Name())
+					}
+				})
+				BeforeEach(func() {
+					*directory = os.TempDir()
+					file = MustReturn(os.CreateTemp(*directory, ""))
+					MustReturn(file.WriteString("{{ 'hello !' | capitalize }}"))
+					*terraformCode = heredoc.Doc(`
+						data "jinja_template" "test" {
+							template = "` + file.Name() + `"
+						}
+					`)
+				})
+				itShouldSetTheExpectedResult(terraformCode, "Hello !")
+
+				Context("and the template contains a relative include statement", func() {
+					var (
+						included *os.File
+					)
+					AfterEach(func() {
+						os.RemoveAll(included.Name())
+					})
+					BeforeEach(func() {
+						included = MustReturn(os.CreateTemp(*directory, ""))
+						MustReturn(included.WriteString("How are you ?"))
+						MustReturn(file.WriteString(" {% include './" + path.Base(included.Name()) + "' %}"))
+					})
+					itShouldSetTheExpectedResult(terraformCode, "Hello ! How are you ?")
+				})
+			})
+
+			Context("and setting the `source` block", func() {
+				BeforeEach(func() {
+					*terraformCode = heredoc.Doc(`
+						data "jinja_template" "test" {
+							template = "{{ 'hello !' | capitalize }}"
+							source {
+								template  = "other template"
+								directory = path.module
+							}
+						}
+					`)
+				})
+				itShouldFailToRender(terraformCode, `"source": conflicts with template`)
+			})
+		})
+
+		Context("when using the `header` field", func() {
+			BeforeEach(func() {
+				*terraformCode = heredoc.Doc(`
+					data "jinja_template" "test" {
+						header   = "Hello"
+						template = "World"
+					}
+				`)
+			})
+			itShouldSetTheExpectedResult(terraformCode, "Hello\nWorld")
+
+			Context("and setting the `source` block", func() {
+				BeforeEach(func() {
+					*terraformCode = heredoc.Doc(`
+						data "jinja_template" "test" {
+							header = "head"
+							source {
+								template  = "other template"
+								directory = path.module
+							}
+						}
+					`)
+				})
+				itShouldFailToRender(terraformCode, `"header": conflicts with source`)
+			})
+		})
+
+		Context("when using the `footer` field", func() {
+			BeforeEach(func() {
+				*terraformCode = heredoc.Doc(`
+					data "jinja_template" "test" {
+						template = "Hello"
+						footer   = "World"
+					}
+				`)
+			})
+			itShouldSetTheExpectedResult(terraformCode, "Hello\nWorld")
+
+			Context("and setting the `source` block", func() {
+				BeforeEach(func() {
+					*terraformCode = heredoc.Doc(`
+						data "jinja_template" "test" {
+							footer = "foot"
+							source {
+								template  = "other template"
+								directory = path.module
+							}
+						}
+					`)
+				})
+				itShouldFailToRender(terraformCode, `"footer": conflicts with source`)
+			})
+		})
+	})
+	Context("when neither `source` nor `template` was set", func() {
+		Context("and setting the `source` block", func() {
+			BeforeEach(func() {
+				*terraformCode = heredoc.Doc(`
+					data "jinja_template" "test" {
+					}
+				`)
+			})
+			itShouldFailToRender(terraformCode, `Error: .* neither "template" nor "source" was set`)
+		})
+	})
+})

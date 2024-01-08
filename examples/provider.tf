@@ -1,6 +1,5 @@
 provider "jinja" {
   delimiters {
-    // The values below are the defaults
     variable_start = "{{"
     variable_end   = "}}"
     block_start    = "{%"
@@ -8,5 +7,7 @@ provider "jinja" {
     comment_start  = "{#"
     comment_end    = "#}"
   }
-  strict_undefined = true
+  strict_undefined  = false
+  left_strip_blocks = false
+  trim_blocks       = false
 }
