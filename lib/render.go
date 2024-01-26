@@ -164,7 +164,7 @@ func validate(values map[string]interface{}, schemas map[string]json.RawMessage)
 	}
 
 	if len(schemaErrors) > 0 {
-		return fmt.Errorf("\n\t%s", strings.Join(schemaErrors, "\n\t"))
+		return fmt.Errorf("\n%s", strings.Join(schemaErrors, "\n"))
 	}
 
 	return nil

@@ -32,10 +32,10 @@ provider "jinja" {
 
 ### Optional
 
-- `delimiters` (Block List, Max: 1) Provider-wide custom delimiters for the jinja engine (see [below for nested schema](#nestedblock--delimiters))
-- `left_strip_blocks` (Boolean) Provider-wide toggle to remove the first newline after a block
-- `strict_undefined` (Boolean) Provider-wide toggle to fail on missing attribute/item
-- `trim_blocks` (Boolean) Provider-wide toggle to trim leading spaces and tabs from the start of a line to a block
+- `delimiters` (Block, Optional) Custom delimiters for the Jinja engine for all templates (see [below for nested schema](#nestedblock--delimiters))
+- `left_strip_blocks` (Boolean) Set to `true` leading spaces and tabs are stripped from the start of a line to a block for all templates
+- `strict_undefined` (Boolean) Set to `true` to fail on missing items and attribute for all templates
+- `trim_blocks` (Boolean) Set to `true` the first newline after a block is removed for all templates
 
 <a id="nestedblock--delimiters"></a>
 ### Nested Schema for `delimiters`
@@ -58,9 +58,33 @@ Finally, the JSON schema validation engine is based on [the `jsonschema` Golang 
 The following sections describe the features available in the engine.
 
 
+## Global Variables
+
+Global variables are runtime variables available in the root scope by default.
+
+```
+{{ gonja.version }}
+```
+
+### The `gonja` object      
+
+A dictionary containing information about the `gonja` library, with the following properties:
+* `version` - the version of the library in use, which is `v0.0.0+trunk` if using any commit from `master` branch
+
+
+### The `provider` object
+
+A dictionary containing information about the `provider` with the following properties:
+* `version` - the version of the provider in use, which is `v0.0.0+trunk` for unreleased versions
+* `commit` - the commit SHA of the binary has been built from
+* `date` - the date when the binary was built
+* `repository` - the URL of the `git` repository of the provider
+* `registry` - the URL of the registry the provider is published to
+
+
 ## Control Structures
 
-This section describes the syntax and semantics of the template engine and will be most useful as reference to those creating Jinja templates. A _control structure_  (or _statement_) is a special keyword that can be used in block to achieve conditional logic in a template.
+This section describes the syntax and semantics of the template engine and will be most useful as reference to those creating Jinja templates. A _control structure_  (or _statement_) is a special keyword that can be used through blocks in order to achieve conditional logic in a template.
 
 The following clickable admonition can be used to browse the `python` dedicated documentation for additional details:
 
@@ -387,7 +411,7 @@ Generates some lorem ipsum for the template. By default, five paragraphs of HTML
 
 ## Filters
 
-Variables can be modified by filters. Filters are separated from the variable by a pipe symbol (|) and may have optional arguments in parentheses. Multiple filters can be chained. The output of one filter is applied to the next.
+Variables can be modified by filters. Filters are separated from the variable by a pipe symbol (`|`) and may have optional arguments in parentheses. Multiple filters can be chained. The output of one filter is applied to the next.
 
 ```
 {{ "a,b,c" | split(",") | tojson }}
@@ -1238,3 +1262,97 @@ Classic type casting tests.
 
 ### The `empty` test
 Check if the input is empty. Works on strings, lists and dictionaries.
+
+
+## Methods
+
+Methods are Go implementations of class functions available on native `python` types. For example:
+
+```
+{{ "hello".upper() }}
+```
+
+The following clickable admonition can be used to browse the `python` dedicated documentation for additional details:
+
+| [🐍 `python`](https://docs.python.org/3/library/stdtypes.html) |
+| ------------------------------------------------------------- |
+
+
+### The `bool` type      
+
+_Booleans are subtypes of integers in `python`._
+
+| [🐍 `python`](https://docs.python.org/3/library/stdtypes.html#additional-methods-on-integer-types) |
+| ------------------------------------------------------------------------------------------------- |
+
+#### The `bit_length()` method
+
+Returns the number of bits necessary to represent an integer in binary, excluding the sign and leading zeros.
+
+#### The `bit_count()` method
+
+Returns the number of ones in the binary representation of the absolute value of the integer. This is also known as the population count.
+
+### The `int` type      
+
+| [🐍 `python`](https://docs.python.org/3/library/stdtypes.html#additional-methods-on-integer-types) |
+| ------------------------------------------------------------------------------------------------- |
+
+#### The `is_integer()` method
+
+Returns `True`. Exists for duck type compatibility with `float.is_integer()`.
+
+
+### The `float` type      
+
+| [🐍 `python`](https://docs.python.org/3/library/stdtypes.html#additional-methods-on-float) |
+| ----------------------------------------------------------------------------------------- |
+
+#### The `is_integer()` method
+
+Returns `True` if the float instance is finite with integral value, and `False` otherwise.
+
+### The `str` type
+
+| [🐍 `python`](https://docs.python.org/3/library/stdtypes.html#string-methods) |
+| ---------------------------------------------------------------------------- |
+
+#### The `upper()` method
+
+Returns a copy of the string with all the cased characters converted to uppercase.
+
+#### The `startswith(prefix[, start[, end]])` method
+
+Returns `True` if string starts with the prefix, otherwise return `False`. The `prefix` parameter can also be a tuple (or a list which is not supported in `python`) of prefixes to look for. 
+
+With optional `start`, test string beginning at that position. With optional `end`, stop comparing string at that position.
+
+#### The `encode(encoding='utf-8', errors='strict')` method
+
+Return the string encoded to bytes. Encoding defaults to `'utf-8'` and only `'iso-8859-1'` is also supported. `errors` controls how encoding errors are handled and can be set to `'strict'` or `'ignore'`.
+
+### The `list` type      
+
+| [🐍 `python`](https://docs.python.org/3/tutorial/datastructures.html#data-structures) |
+| ------------------------------------------------------------------------------------ |
+
+#### The `reverse()` method
+
+Reverses the elements of the list in place.
+
+#### The `append(x)` method
+
+Adds an item to the end of the list.
+
+#### The `copy()` method
+
+Returns a shallow copy of the list.
+
+### The `dict` type      
+
+| [🐍 `python`](https://docs.python.org/3/library/stdtypes.html#mapping-types-dict) |
+| -------------------------------------------------------------------------------- |
+
+#### The `keys()` method
+
+Returns a list of the dictionary’s keys.

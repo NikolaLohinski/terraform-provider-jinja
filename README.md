@@ -1,5 +1,5 @@
 <div align="center">
-<img src="./misc/logo.png" width="200"/>
+<img src="./logo.png" width="200"/>
 <h1><code>terraform-provider-jinja</code></h1>
 </div>
 

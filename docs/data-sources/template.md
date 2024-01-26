@@ -16,14 +16,14 @@ The jinja_template data source renders a jinja template with a given template wi
 data "jinja_template" "render" {
   context {
     type = "yaml"
-    data = "${path.module}/src/context.yaml"
+    data = file("${path.module}/src/context.yaml")
   }
   source {
     template  = file("${path.module}/src/template.j2")
     directory = "${path.module}/src"
   }
   validation = {
-    "schema" = "${path.module}/src/schema.json"
+    "schema" = file("${path.module}/src/schema.json")
   }
   strict_undefined  = false
   left_strip_blocks = false
@@ -37,20 +37,20 @@ data "jinja_template" "render" {
 ### Optional
 
 - `context` (Block List) Context to use while rendering the template. If multiple are passed, they are merged in order with overriding (see [below for nested schema](#nestedblock--context))
-- `delimiters` (Block List, Max: 1) Custom delimiters for the jinja engine (see [below for nested schema](#nestedblock--delimiters))
+- `delimiters` (Block, Optional) Custom delimiters for the Jinja engine. Setting any nested value overrides the one set at the provider level if any (see [below for nested schema](#nestedblock--delimiters))
 - `footer` (String, Deprecated) Footer to add at the bottom of the template before rendering. Deprecated in favor of the `source` block
 - `header` (String, Deprecated) Header to add at the top of the template before rendering. Deprecated in favor of the `source` block
-- `left_strip_blocks` (Boolean) If this is set to `true` leading spaces and tabs are stripped from the start of a line to a block
-- `source` (Block List, Max: 1) Source template to use for rendering (see [below for nested schema](#nestedblock--source))
-- `strict_undefined` (Boolean) Toggle to fail rendering on missing attribute/item
+- `left_strip_blocks` (Boolean) Set to `true` leading spaces and tabs are stripped from the start of a line to a block. Setting this value overrides any value set at the provider level if any
+- `source` (Block List) Source template to use for rendering (see [below for nested schema](#nestedblock--source))
+- `strict_undefined` (Boolean) Set to `true` to fail on missing items and attribute. Setting this value overrides any value set at the provider level if any
 - `template` (String, Deprecated) Inlined or path to the jinja template to render. If the template is passed inlined, any filesystem calls such as using the `include` statement or the `fileset` filter won't work as expected. Deprecated in favor of the `source` block
-- `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
-- `trim_blocks` (Boolean) If this is set to `true` the first newline after a block is removed (block, not variable tag!)
+- `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
+- `trim_blocks` (Boolean) Set to `true` the first newline after a block is removed. Setting this value overrides any value set at the provider level if any
 - `validation` (Map of String) Map of JSON schemas to validate against the context. Schemas are tested sequentially in lexicographic order of this map's keys
 
 ### Read-Only
 
-- `id` (String) The ID of this resource.
+- `id` (String) The sha256 of the `result` field
 - `merged_context` (String) JSON encoded representation of the merged context that has been applied to the template
 - `result` (String) Rendered template with the given context
 
@@ -60,7 +60,7 @@ data "jinja_template" "render" {
 Required:
 
 - `data` (String) A string holding the serialized context
-- `type` (String) Type of parsing (one of: yaml, json, toml) to perform on the given string
+- `type` (String) Type of parsing (one of: `yaml`,`json`,`toml`) to perform on the given string
 
 
 <a id="nestedblock--delimiters"></a>
@@ -85,9 +85,9 @@ Required:
 - `template` (String) Template to render. If required to load an external file, then the `file(...)` function can be used to retrieve the file's content
 
 
-<a id="nestedblock--timeouts"></a>
+<a id="nestedatt--timeouts"></a>
 ### Nested Schema for `timeouts`
 
 Optional:
 
-- `read` (String)
+- `read` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Read operations occur during any refresh or planning operation when refresh is enabled.

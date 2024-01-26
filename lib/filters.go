@@ -136,10 +136,10 @@ func filterGet(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Va
 	item := p.First().String()
 	value, ok := in.GetItem(item)
 	if !ok {
-		if fallback := p.GetKwarg("default", nil); !fallback.IsNil() {
+		if fallback := p.GetKeywordArgument("default", nil); !fallback.IsNil() {
 			return fallback
 		}
-		if p.GetKwarg("strict", false).Bool() {
+		if p.GetKeywordArgument("strict", false).Bool() {
 			return exec.AsValue(fmt.Errorf("item '%s' not found in: %s", item, in.String()))
 		}
 	}

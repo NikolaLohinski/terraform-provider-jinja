@@ -38,6 +38,17 @@ Finally, the JSON schema validation engine is based on [the `jsonschema` Golang 
 
 The following sections describe the features available in the engine.
 
+{{ template "file" "vendor/github.com/nikolalohinski/gonja/v2/docs/global_variables.md" }}
+
+### The `provider` object
+
+A dictionary containing information about the `provider` with the following properties:
+* `version` - the version of the provider in use, which is `v0.0.0+trunk` for unreleased versions
+* `commit` - the commit SHA of the binary has been built from
+* `date` - the date when the binary was built
+* `repository` - the URL of the `git` repository of the provider
+* `registry` - the URL of the registry the provider is published to
+
 {{ template "file" "vendor/github.com/nikolalohinski/gonja/v2/docs/control_structures.md" }}
 
 {{ template "file" "vendor/github.com/nikolalohinski/gonja/v2/docs/global_functions.md" }}
@@ -324,3 +335,5 @@ Will render into:
 
 ### The `empty` test
 Check if the input is empty. Works on strings, lists and dictionaries.
+
+{{ template "file" "vendor/github.com/nikolalohinski/gonja/v2/docs/methods.md" }}

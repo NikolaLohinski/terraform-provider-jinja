@@ -1,10 +1,33 @@
 package main
 
 import (
-	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
-	jinja "github.com/nikolalohinski/terraform-provider-jinja/provider"
+	"context"
+	"flag"
+	"log"
+
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+	"github.com/nikolalohinski/terraform-provider-jinja/v2/internal/provider"
+	"github.com/nikolalohinski/terraform-provider-jinja/v2/lib"
+)
+
+const (
+	registryAddress = "registry.terraform.io/NikolaLohinski/jinja"
 )
 
 func main() {
-	plugin.Serve(&plugin.ServeOpts{ProviderFunc: jinja.Provider})
+	var debug bool
+
+	flag.BoolVar(&debug, "debug", false, "set to true to run the provider with support for debuggers like delve")
+	flag.Parse()
+
+	opts := providerserver.ServeOpts{
+		Address: registryAddress,
+		Debug:   debug,
+	}
+
+	err := providerserver.Serve(context.Background(), provider.New(lib.Version), opts)
+
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 }
