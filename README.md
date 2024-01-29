@@ -5,7 +5,7 @@
 
 A `terraform` provider that makes it possible to render [Jinja](https://jinja.palletsprojects.com/) templates within a `terraform` project.
 
-The Jinja engine used under the hood is based on [the `gonja` Golang library](https://github.com/nikolalohinski/gonja/v2) and aims to be "mostly" compliant with the Jinja API.
+The Jinja engine used under the hood is based on [the `gonja` Golang library](https://github.com/nikolalohinski/gonja/v2) and aims to be as close as possible to `python`'s Jinja.
 
 The JSON schema validation engine is based on [the `jsonschema` Golang library](https://github.com/santhosh-tekuri/jsonschema).
 
@@ -45,19 +45,23 @@ You can run a full example from [the dedicated sub-folder](./examples/).
 
 ## Development
 
+### Guidelines
+
+Please read through the [contribution guidelines](./CONTRIBUTING.md) before diving into any work.
+
 ### Requirements
 
-- Install `make` with [the official instructions](https://www.gnu.org/software/make/) ;
-- Install go `>= 1.20` by following the [official documentation](https://go.dev/doc/install).
-
-| ⚠️ You also need to install `golangci-lint` by following the [official instructions](https://golangci-lint.run/usage/install/#local-installation) to be able to run `make lint`. |
-| --- |
+- Get `make` with [the online instructions](https://www.gnu.org/software/make/) ;
+- Install go `>= 1.21` by following the [official documentation](https://go.dev/doc/install) ;
+- Grab `tfplugindocs` using the [dedicated procedure](https://github.com/hashicorp/terraform-plugin-docs?tab=readme-ov-file#installation) ;
+- Download `goreleaser` from [its website](https://goreleaser.com/install/) ;
+- Fetch the latest `terraform` binary from [Hashicorp's web page](https://developer.hashicorp.com/terraform/install).
 
 ### Tests
 
 The unit tests can be run using:
 
-```shell
+```sh
 make test
 ```
 
@@ -65,8 +69,16 @@ make test
 
 The provider can be installed locally, using:
 
-```shell
+```sh
 make install
 ```
 
 See the [`Makefile`](./Makefile) for more details on what it means.
+
+### Running the example
+
+The example located under `examples/` can be ran with:
+
+```sh
+make example
+```

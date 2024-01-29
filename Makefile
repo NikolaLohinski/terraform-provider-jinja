@@ -3,9 +3,6 @@ default: build
 build:
 	go build -v ./...
 
-lint:
-	golangci-lint run
-
 install:
 	goreleaser build --clean --single-target --snapshot -o /tmp/terraform-provider-jinja/terraform-provider-jinja
 
