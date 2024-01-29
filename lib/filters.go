@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strings"
 
@@ -29,7 +30,7 @@ var Filters = exec.FilterSet{
 	"concat":   filterConcat,
 	"dir":      filterDirname,
 	"dirname":  filterDirname,
-	// "distinct": filterDistinct,	// TODO: implement https://developer.hashicorp.com/terraform/language/functions/distinct
+	"distinct": filterDistinct,
 	// "env": filterEnv, 			// TODO: implement https://terragrunt.gruntwork.io/docs/reference/built-in-functions/#get_env
 	"fail":     filterFail,
 	"file":     filterFile,
@@ -635,4 +636,28 @@ func filterAbsPath(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 	}
 
 	return exec.AsValue(path)
+}
+
+func filterDistinct(_ *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	if in.IsError() {
+		return in
+	}
+	if err := params.Take(); err != nil {
+		return exec.AsValue(fmt.Errorf("wrong signature for filter 'distinct': %s", err))
+	}
+	if !in.IsList() {
+		return exec.AsValue(fmt.Errorf("filter 'distinct' was passed '%s' which is not a list", in.String()))
+	}
+	out := make([]interface{}, 0)
+	in.Iterate(func(idx, count int, item, _ *exec.Value) bool {
+		for _, alreadyThere := range out {
+			if reflect.DeepEqual(exec.AsValue(alreadyThere).ToGoSimpleType(false), item.ToGoSimpleType(false)) {
+				return true
+			}
+		}
+		out = append(out, item.Interface())
+		return true
+	}, func() {})
+
+	return exec.AsValue(out)
 }

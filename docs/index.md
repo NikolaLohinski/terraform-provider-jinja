@@ -898,6 +898,18 @@ Will render into:
 ["one","two","three"]
 ```
 
+### The `distinct` filter
+
+The `distinct` filter takes any list of elements and returns a new list with duplicates removed.
+
+```
+{{ [1, 1, 2, 3, 2, 1] | distinct }}
+```
+Will render into:
+```
+[1, 2, 3]
+```
+
 ### The `fail` filter
 
 The `fail` filter is meant to error out explicitly in a given place of the template.

@@ -767,4 +767,40 @@ var _ = Context("filters", func() {
 			itShouldFailToRender(terraformCode, "filter 'abspath' was passed 'True' which is not a string")
 		})
 	})
+	Context("distinct", func() {
+		BeforeEach(func() {
+			*template = `{{- ["a", "b", "a", "c", "d", "b"] | distinct -}}`
+		})
+		itShouldSetTheExpectedResult(terraformCode, "['a', 'b', 'c', 'd']")
+		Context("when the input is a list of integers", func() {
+			BeforeEach(func() {
+				*template = `{{- [1,1,1,2,3,3,2,3] | distinct -}}`
+			})
+			itShouldSetTheExpectedResult(terraformCode, "[1, 2, 3]")
+		})
+		Context("when the input is a list of objects", func() {
+			BeforeEach(func() {
+				*template = `{{- [{"one": 1}, {"two": 2}, {"one": 1}] | distinct -}}`
+			})
+			itShouldSetTheExpectedResult(terraformCode, "[{'one': 1}, {'two': 2}]")
+		})
+		Context("when the input is a list of lists", func() {
+			BeforeEach(func() {
+				*template = `{{- [[1,2], [1,"two"], [1,"two"]] | distinct -}}`
+			})
+			itShouldSetTheExpectedResult(terraformCode, "[[1, 2], [1, 'two']]")
+		})
+		Context("when the input is not a list", func() {
+			BeforeEach(func() {
+				*template = `{{- {} | distinct -}}`
+			})
+			itShouldFailToRender(terraformCode, "filter 'distinct' was passed '{}' which is not a list")
+		})
+		Context("when the input is an error", func() {
+			BeforeEach(func() {
+				*template = `{{- "thrown" | fail | distinct -}}`
+			})
+			itShouldFailToRender(terraformCode, "thrown")
+		})
+	})
 })
