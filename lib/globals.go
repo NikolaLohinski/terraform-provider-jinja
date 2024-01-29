@@ -1,6 +1,9 @@
 package lib
 
 import (
+	"fmt"
+	"path/filepath"
+
 	"github.com/nikolalohinski/gonja/v2/exec"
 )
 
@@ -21,10 +24,33 @@ var Globals = exec.NewContext(map[string]interface{}{
 		"repository": Repository,
 		"registry":   Registry,
 	},
+	"abspath": absPathGlobal,
 	// "file": func(e *exec.Evaluator, arguments *exec.VarArgs) *exec.Value { return nil }, // TODO: define a global file function similar to the file filter
 	// "fileset": func(e *exec.Evaluator, arguments *exec.VarArgs) *exec.Value { return nil }, // TODO: define a global fileset function similar to the fileset filter
 	// "dirname": func(e *exec.Evaluator, arguments *exec.VarArgs) *exec.Value { return nil }, // TODO: define a global dirname function similar to the dirname filter
 	// "basename": func(e *exec.Evaluator, arguments *exec.VarArgs) *exec.Value { return nil }, // TODO: define a global basename function similar to the basename filter
-	// "abspath": func(e *exec.Evaluator, arguments *exec.VarArgs) *exec.Value { return nil }, // TODO: define a global abspath function similar to the abspath filter
 	// "env": func(e *exec.Evaluator, arguments *exec.VarArgs) *exec.Value { return nil }, // TODO: define a global env function similar to the env filter // TODO: implement https://terragrunt.gruntwork.io/docs/reference/built-in-functions/#get_env
 })
+
+func absPathGlobal(e *exec.Evaluator, params *exec.VarArgs) *exec.Value {
+	var (
+		path string
+	)
+	if err := params.Take(
+		exec.KeywordArgument("path", nil, exec.StringArgument(&path)),
+	); err != nil {
+		return exec.AsValue(fmt.Errorf("wrong signature for function 'abspath': %s", err))
+	}
+
+	resolved, err := e.Loader.Resolve(path)
+	if err != nil {
+		return exec.AsValue(fmt.Errorf("failed to resolve path: %s", path))
+	}
+
+	p, err := filepath.Abs(resolved)
+	if err != nil {
+		return exec.AsValue(fmt.Errorf("failed to derive an absolute path of: %s", resolved))
+	}
+
+	return exec.AsValue(p)
+}

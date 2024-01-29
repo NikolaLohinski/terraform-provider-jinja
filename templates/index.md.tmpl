@@ -53,11 +53,19 @@ A dictionary containing information about the `provider` with the following prop
 
 {{ template "file" "vendor/github.com/nikolalohinski/gonja/v2/docs/global_functions.md" }}
 
+### The `abspath` function
+
+The `abspath` function takes a `path` string containing a filesystem path and converts it to an absolute path. If the path is not absolute, it is resolved according to the directory of the template it is called from.
+
+```
+{{ "{{" }} abspath('./path/to/file') {{ "}}" }}
+```
+
 {{ template "file" "vendor/github.com/nikolalohinski/gonja/v2/docs/filters.md" }}
 
 ### The `abspath` filter
 
-`abspath` takes a string containing a filesystem path and converts it to an absolute path. If the path is not absolute, it is resolved according to the directory of the template it is called from.
+The `abspath` filter takes a string containing a filesystem path and converts it to an absolute path. If the path is not absolute, it is resolved according to the directory of the template it is called from.
 
 ### The `add`, `append` and `insert` filters
 

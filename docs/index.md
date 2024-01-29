@@ -408,6 +408,14 @@ A tiny helper that can be used to “join” multiple sections. A `joiner` is pa
 Generates some lorem ipsum for the template. By default, five paragraphs of HTML are generated with each paragraph between 20 and 100 words. If html is False, regular text is returned. This is useful to generate simple contents for layout testing.
 
 
+### The `abspath` function
+
+The `abspath` function takes a `path` string containing a filesystem path and converts it to an absolute path. If the path is not absolute, it is resolved according to the directory of the template it is called from.
+
+```
+{{ abspath('./path/to/file') }}
+```
+
 
 ## Filters
 
@@ -838,7 +846,7 @@ Create an SGML/XML attribute string based on the items in a dict.
 
 ### The `abspath` filter
 
-`abspath` takes a string containing a filesystem path and converts it to an absolute path. If the path is not absolute, it is resolved according to the directory of the template it is called from.
+The `abspath` filter takes a string containing a filesystem path and converts it to an absolute path. If the path is not absolute, it is resolved according to the directory of the template it is called from.
 
 ### The `add`, `append` and `insert` filters
 
