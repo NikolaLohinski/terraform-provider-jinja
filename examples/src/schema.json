@@ -1,13 +1,20 @@
 {
     "type": "object",
     "required": [
-        "recipe"
+        "foo"
     ],
     "properties": {
         "recipe": {
             "type": "array",
             "items": {
-              "type": "string"
+              "oneOf": [
+                {
+                    "type": "string"
+                },
+                {
+                    "type": "integer"
+                }
+              ]
             },
             "minItems": 1,
             "maxItems": 5

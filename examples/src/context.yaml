@@ -1,4 +1,5 @@
-recipe:
-- salt
-- meat
-- vegetables
+---
+foo: bar
+one:
+- two
+- 3

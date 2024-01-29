@@ -4,6 +4,7 @@ before:
   hooks:
     # this is just an example and not a requirement for provider building/publishing
     - go mod tidy
+    - mkdir -p /tmp/terraform-provider-jinja
 builds:
 - env:
     # goreleaser does not work with CGO, it could also complicate
@@ -14,7 +15,13 @@ builds:
   flags:
     - -trimpath
   ldflags:
-    - '-s -w -X lib.Version={{.Version}} -X lib.Commit={{.Commit}} -X lib.Date={{.Date}}'
+    - >
+      -s -w
+      -X github.com/nikolalohinski/terraform-provider-jinja/v2/lib.Version={{ .Version }}
+      -X github.com/nikolalohinski/terraform-provider-jinja/v2/lib.Commit={{ .FullCommit }}
+      -X github.com/nikolalohinski/terraform-provider-jinja/v2/lib.Date={{ .Date }}
+      -X github.com/nikolalohinski/terraform-provider-jinja/v2/lib.Repository={{ .GitURL }}
+      -X github.com/nikolalohinski/terraform-provider-jinja/v2/lib.Registry=registry.terraform.io/NikolaLohinski/jinja
   goos:
     - freebsd
     - windows

@@ -7,7 +7,7 @@ lint:
 	golangci-lint run
 
 install:
-	go build -o /tmp/terraform-provider-jinja/terraform-provider-jinja
+	goreleaser build --clean --single-target --snapshot -o /tmp/terraform-provider-jinja/terraform-provider-jinja
 
 fmt:
 	gofmt -s -w -e ./provider ./lib

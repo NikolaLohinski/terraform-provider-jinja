@@ -10,10 +10,6 @@ import (
 	"github.com/nikolalohinski/terraform-provider-jinja/v2/lib"
 )
 
-const (
-	registryAddress = "registry.terraform.io/NikolaLohinski/jinja"
-)
-
 func main() {
 	var debug bool
 
@@ -21,7 +17,7 @@ func main() {
 	flag.Parse()
 
 	opts := providerserver.ServeOpts{
-		Address: registryAddress,
+		Address: lib.Registry,
 		Debug:   debug,
 	}
 

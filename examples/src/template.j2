@@ -1,4 +1,16 @@
-The ingredients are:
-{%- for ingredient in recipe %}
-- {{ ingredient }}
+From context:
+foo: {{ foo }}
+one:
+{%- for item in one %}
+- {{ item }}
 {%- endfor %}
+
+From globals:
+- provider:
+  - version: {{ provider.version }}
+  - commit: {{ provider.commit }}
+  - date: {{ provider.date }}
+  - repository: {{ provider.repository }}
+  - registry: {{ provider.registry }}
+- gonja:
+  - version: {{ gonja.version }}

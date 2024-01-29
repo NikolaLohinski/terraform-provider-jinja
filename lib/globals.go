@@ -5,12 +5,12 @@ import (
 )
 
 // The following constants are replaced at build time
-const (
+var (
 	Version    = "0.0.0+trunk"
 	Commit     = "0000000000000000000000000000000000000000"
 	Date       = "1970-01-01T00:00:00+00:00"
-	Repository = "https://github.com/nikolalohinski/terraform-provider-jinja"
-	Registry   = "https://registry.terraform.io/providers/NikolaLohinski/jinja/" + Version
+	Repository = "github.com/nikolalohinski/terraform-provider-jinja"
+	Registry   = "registry.terraform.io/NikolaLohinski/jinja"
 )
 
 var Globals = exec.NewContext(map[string]interface{}{
