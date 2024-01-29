@@ -31,7 +31,7 @@ var Filters = exec.FilterSet{
 	"dir":      filterDirname,
 	"dirname":  filterDirname,
 	"distinct": filterDistinct,
-	// "env": filterEnv, 			// TODO: implement https://terragrunt.gruntwork.io/docs/reference/built-in-functions/#get_env
+	"env":      filterEnv,
 	"fail":     filterFail,
 	"file":     filterFile,
 	"fileset":  filterFileset,
@@ -660,4 +660,30 @@ func filterDistinct(_ *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *ex
 	}, func() {})
 
 	return exec.AsValue(out)
+}
+
+func filterEnv(_ *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	if in.IsError() {
+		return in
+	}
+	var (
+		defaultValue string
+	)
+	if err := params.Take(
+		exec.KeywordArgument("default", exec.AsValue(""), exec.StringArgument(&defaultValue)),
+	); err != nil {
+		return exec.AsValue(fmt.Errorf("wrong signature for filter 'env': %s", err))
+	}
+	if !in.IsString() {
+		return exec.AsValue(fmt.Errorf("filter 'env' was passed '%s' which is not a string", in.String()))
+	}
+	value, ok := os.LookupEnv(in.String())
+	if !ok {
+		if defaultValue == "" {
+			return exec.AsValue(fmt.Errorf("failed to get '%s' environment variable without default", in.String()))
+		}
+		value = defaultValue
+	}
+
+	return exec.AsValue(value)
 }

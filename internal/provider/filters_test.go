@@ -803,4 +803,39 @@ var _ = Context("filters", func() {
 			itShouldFailToRender(terraformCode, "thrown")
 		})
 	})
+	Context("env", func() {
+		BeforeEach(func() {
+			Must(os.Setenv("FOO", "BAR"))
+
+			*template = `{{- "FOO" | env -}}`
+		})
+		AfterEach(func() {
+			Must(os.Unsetenv("FOO"))
+		})
+		itShouldSetTheExpectedResult(terraformCode, "BAR")
+		Context("when the environment variable does not exist", func() {
+			BeforeEach(func() {
+				*template = `{{- "NOPE" | env -}}`
+			})
+			itShouldFailToRender(terraformCode, "failed to get 'NOPE' environment variable without default")
+			Context("but a default was defined", func() {
+				BeforeEach(func() {
+					*template = `{{- "NOPE" | env(default="BAR") -}}`
+				})
+				itShouldSetTheExpectedResult(terraformCode, "BAR")
+			})
+		})
+		Context("when the input is not a string", func() {
+			BeforeEach(func() {
+				*template = `{{- True | env -}}`
+			})
+			itShouldFailToRender(terraformCode, "filter 'env' was passed 'True' which is not a string")
+		})
+		Context("when the input is an error", func() {
+			BeforeEach(func() {
+				*template = `{{- "thrown" | fail | env -}}`
+			})
+			itShouldFailToRender(terraformCode, "thrown")
+		})
+	})
 })

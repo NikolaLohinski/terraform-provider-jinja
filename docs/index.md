@@ -910,6 +910,14 @@ Will render into:
 [1, 2, 3]
 ```
 
+### The `env` filter
+
+The `env` filter retrieves a environment variable. It will fail if the environment variable is not found but take an additional `default` keyword parameter to set a default value as a fallback.
+
+```
+{{ "USER" | env(default="root") }}
+```
+
 ### The `fail` filter
 
 The `fail` filter is meant to error out explicitly in a given place of the template.
