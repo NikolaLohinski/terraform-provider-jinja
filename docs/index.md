@@ -836,6 +836,10 @@ Wrap a string to the given width. Existing newlines are treated as paragraphs to
 Create an SGML/XML attribute string based on the items in a dict.
 
 
+### The `abspath` filter
+
+`abspath` takes a string containing a filesystem path and converts it to an absolute path. If the path is not absolute, it is resolved according to the directory of the template it is called from.
+
 ### The `add`, `append` and `insert` filters
 
 The `insert` filter is meant to add a key value pair to a dict. It expects a key and value to operate.

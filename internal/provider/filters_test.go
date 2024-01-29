@@ -746,4 +746,25 @@ var _ = Context("filters", func() {
 			itShouldFailToRender(terraformCode, "thrown")
 		})
 	})
+	Context("abspath", Ordered, func() {
+		BeforeAll(func() {
+			*directory = os.TempDir()
+
+			Must(os.MkdirAll(path.Join(*directory, "abspath"), 0700))
+
+			MustReturn(os.Create(path.Join(*directory, "abspath", "file.txt"))).Close()
+
+			*template = `{{- "./abspath/file.txt" | abspath -}}`
+		})
+		AfterAll(func() {
+			os.RemoveAll(*directory)
+		})
+		itShouldSetTheExpectedResult(terraformCode, path.Join(os.TempDir(), "abspath", "file.txt"))
+		Context("when the input is not a string", func() {
+			BeforeEach(func() {
+				*template = `{{- true | abspath -}}`
+			})
+			itShouldFailToRender(terraformCode, "filter 'abspath' was passed 'True' which is not a string")
+		})
+	})
 })

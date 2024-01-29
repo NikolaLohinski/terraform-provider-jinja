@@ -21,7 +21,7 @@ import (
 )
 
 var Filters = exec.FilterSet{
-	// "abspath":      filterAbsPath, // TODO: implement https://developer.hashicorp.com/terraform/language/functions/abspath
+	"abspath":  filterAbsPath,
 	"add":      filterAdd,
 	"append":   filterAppend,
 	"basename": filterBasename,
@@ -612,4 +612,27 @@ func filterMatch(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.
 	}
 
 	return exec.AsValue(matcher.MatchString(in.String()))
+}
+
+func filterAbsPath(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	if in.IsError() {
+		return in
+	}
+	if err := params.Take(); err != nil {
+		return exec.AsValue(fmt.Errorf("wrong signature for filter 'abspath': %s", err))
+	}
+	if !in.IsString() {
+		return exec.AsValue(fmt.Errorf("filter 'abspath' was passed '%s' which is not a string", in.String()))
+	}
+	resolved, err := e.Loader.Resolve(in.String())
+	if err != nil {
+		return exec.AsValue(fmt.Errorf("failed to resolve path: %s", in.String()))
+	}
+
+	path, err := filepath.Abs(resolved)
+	if err != nil {
+		return exec.AsValue(fmt.Errorf("failed to derive an absolute path of: %s", resolved))
+	}
+
+	return exec.AsValue(path)
 }

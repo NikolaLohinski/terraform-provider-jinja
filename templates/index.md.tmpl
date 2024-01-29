@@ -55,6 +55,10 @@ A dictionary containing information about the `provider` with the following prop
 
 {{ template "file" "vendor/github.com/nikolalohinski/gonja/v2/docs/filters.md" }}
 
+### The `abspath` filter
+
+`abspath` takes a string containing a filesystem path and converts it to an absolute path. If the path is not absolute, it is resolved according to the directory of the template it is called from.
+
 ### The `add`, `append` and `insert` filters
 
 The `insert` filter is meant to add a key value pair to a dict. It expects a key and value to operate.
