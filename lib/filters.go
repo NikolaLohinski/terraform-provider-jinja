@@ -2,6 +2,7 @@ package lib
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"path"
@@ -22,24 +23,24 @@ import (
 )
 
 var Filters = exec.FilterSet{
-	"abspath":  filterAbsPath,
-	"add":      filterAdd,
-	"append":   filterAppend,
-	"basename": filterBasename,
-	"bool":     filterBool,
-	"concat":   filterConcat,
-	"dir":      filterDirname,
-	"dirname":  filterDirname,
-	"distinct": filterDistinct,
-	"env":      filterEnv,
-	"fail":     filterFail,
-	"file":     filterFile,
-	"fileset":  filterFileset,
-	"flatten":  filterFlatten,
-	"fromjson": filterFromJSON,
-	"fromyaml": filterFromYAML,
-	"fromtoml": filterFromTOML,
-	// "frombase64": filterFromBase64, 	// TODO: implement https://developer.hashicorp.com/terraform/language/functions/base64decode
+	"abspath":    filterAbsPath,
+	"add":        filterAdd,
+	"append":     filterAppend,
+	"basename":   filterBasename,
+	"bool":       filterBool,
+	"concat":     filterConcat,
+	"dir":        filterDirname,
+	"dirname":    filterDirname,
+	"distinct":   filterDistinct,
+	"env":        filterEnv,
+	"fail":       filterFail,
+	"file":       filterFile,
+	"fileset":    filterFileset,
+	"flatten":    filterFlatten,
+	"fromjson":   filterFromJSON,
+	"fromyaml":   filterFromYAML,
+	"fromtoml":   filterFromTOML,
+	"frombase64": filterFromBase64,
 	// "fromcsv": filterFromCSV, 		// TODO: implement https://developer.hashicorp.com/terraform/language/functions/csvdecode
 	// "fromtfvars": filterFromTFVars, 	// TODO: implement https://terragrunt.gruntwork.io/docs/reference/built-in-functions/#read_tfvars_file
 	"get":    filterGet,
@@ -52,13 +53,13 @@ var Filters = exec.FilterSet{
 	// "sha256": filterSha256, 	// TODO: implement https://developer.hashicorp.com/terraform/language/functions/sha256
 	// "sha512": filterSha512, 	// TODO: implement https://developer.hashicorp.com/terraform/language/functions/sha512
 	// "uuid": filterUUID, 		// TODO: implement https://developer.hashicorp.com/terraform/language/functions/uuid
-	"split":  filterSplit,
-	"totoml": filterToToml,
-	"toyaml": filterToYAML,
-	// "tobase64": filterToBase64, // TODO: implement https://developer.hashicorp.com/terraform/language/functions/base64encode
-	"try":    filterTry,
-	"unset":  filterUnset,
-	"values": filterValues,
+	"split":    filterSplit,
+	"totoml":   filterToToml,
+	"toyaml":   filterToYAML,
+	"tobase64": filterToBase64,
+	"try":      filterTry,
+	"unset":    filterUnset,
+	"values":   filterValues,
 }
 
 func filterBool(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
@@ -686,4 +687,35 @@ func filterEnv(_ *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Va
 	}
 
 	return exec.AsValue(value)
+}
+
+func filterFromBase64(_ *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	if in.IsError() {
+		return in
+	}
+	if err := params.Take(); err != nil {
+		return exec.AsValue(fmt.Errorf("wrong signature for filter 'frombase64': %s", err))
+	}
+	if !in.IsString() {
+		return exec.AsValue(fmt.Errorf("filter 'frombase64' was passed '%s' which is not a string", in.String()))
+	}
+	decoded, err := base64.StdEncoding.DecodeString(in.String())
+	if err != nil {
+		return exec.AsValue(fmt.Errorf("failed to decode '%s' from base64: %s", in.String(), err.Error()))
+	}
+	return exec.AsValue(string(decoded))
+}
+
+func filterToBase64(_ *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	if in.IsError() {
+		return in
+	}
+	if err := params.Take(); err != nil {
+		return exec.AsValue(fmt.Errorf("wrong signature for filter 'tobase64': %s", err))
+	}
+	if !in.IsString() {
+		return exec.AsValue(fmt.Errorf("filter 'tobase64' was passed '%s' which is not a string", in.String()))
+	}
+	encoded := base64.StdEncoding.EncodeToString([]byte(in.String()))
+	return exec.AsValue(encoded)
 }

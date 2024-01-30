@@ -838,4 +838,46 @@ var _ = Context("filters", func() {
 			itShouldFailToRender(terraformCode, "thrown")
 		})
 	})
+	Context("tobase64", func() {
+		BeforeEach(func() {
+			*template = `{{- "test" | tobase64 -}}`
+		})
+		itShouldSetTheExpectedResult(terraformCode, "dGVzdA==")
+		Context("when the input is not a string", func() {
+			BeforeEach(func() {
+				*template = `{{- True | tobase64 -}}`
+			})
+			itShouldFailToRender(terraformCode, "filter 'tobase64' was passed 'True' which is not a string")
+		})
+		Context("when the input is an error", func() {
+			BeforeEach(func() {
+				*template = `{{- "thrown" | fail | tobase64 -}}`
+			})
+			itShouldFailToRender(terraformCode, "thrown")
+		})
+	})
+	Context("frombase64", func() {
+		BeforeEach(func() {
+			*template = `{{- "dGVzdA==" | frombase64 -}}`
+		})
+		itShouldSetTheExpectedResult(terraformCode, "test")
+		Context("when the input is not a string", func() {
+			BeforeEach(func() {
+				*template = `{{- True | frombase64 -}}`
+			})
+			itShouldFailToRender(terraformCode, "filter 'frombase64' was passed 'True' which is not a string")
+		})
+		Context("when the input is not a valid base64 encoding", func() {
+			BeforeEach(func() {
+				*template = `{{- "❌" | frombase64 -}}`
+			})
+			itShouldFailToRender(terraformCode, "failed to decode '❌' from base64")
+		})
+		Context("when the input is an error", func() {
+			BeforeEach(func() {
+				*template = `{{- "thrown" | fail | frombase64 -}}`
+			})
+			itShouldFailToRender(terraformCode, "thrown")
+		})
+	})
 })

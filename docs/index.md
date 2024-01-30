@@ -948,6 +948,20 @@ folder that contains the file being rendered.
 ```
 
 
+### The `frombase64` filter
+
+The `frombase64` filter is meant to decode a string encoded in base64.
+
+```
+{{ 'SGVsbG8gV29ybGQh' | frombase64 }}
+```
+
+Will render into:
+
+```
+Hello World!
+```
+
 ### The `fromjson` filter
 
 The `fromjson` filter is meant to parse a JSON string into a useable object.
@@ -1073,6 +1087,19 @@ Will render into:
 ["one","two","three"]
 ```
 
+### The `tobase64` filter
+
+The `tobase64` filter is meant to encode a string to a base64 representation.
+
+```
+{{ 'Hello World!' | tobase64 }}
+```
+
+Will render into:
+
+```
+SGVsbG8gV29ybGQh
+```
 
 ### The `totoml` filter
 
