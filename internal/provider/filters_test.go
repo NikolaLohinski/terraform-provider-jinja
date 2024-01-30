@@ -880,4 +880,28 @@ var _ = Context("filters", func() {
 			itShouldFailToRender(terraformCode, "thrown")
 		})
 	})
+	Context("fromcsv", func() {
+		BeforeEach(func() {
+			*template = `{{- "a,b,c\n1,2,3\n4,5,6" | fromcsv -}}`
+		})
+		itShouldSetTheExpectedResult(terraformCode, "[{'a': '1', 'b': '2', 'c': '3'}, {'a': '4', 'b': '5', 'c': '6'}]")
+		Context("when the input is not a string", func() {
+			BeforeEach(func() {
+				*template = `{{- True | fromcsv -}}`
+			})
+			itShouldFailToRender(terraformCode, "filter 'fromcsv' was passed 'True' which is not a string")
+		})
+		Context("when the input is not a valid csv", func() {
+			BeforeEach(func() {
+				*template = `{{- "nope,;s\nssss" | fromcsv -}}`
+			})
+			itShouldFailToRender(terraformCode, "record on line 2: wrong number of fields")
+		})
+		Context("when the input is an error", func() {
+			BeforeEach(func() {
+				*template = `{{- "thrown" | fail | fromcsv -}}`
+			})
+			itShouldFailToRender(terraformCode, "thrown")
+		})
+	})
 })

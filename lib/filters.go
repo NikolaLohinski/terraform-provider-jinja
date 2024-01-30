@@ -3,7 +3,9 @@ package lib
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/csv"
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -41,7 +43,7 @@ var Filters = exec.FilterSet{
 	"fromyaml":   filterFromYAML,
 	"fromtoml":   filterFromTOML,
 	"frombase64": filterFromBase64,
-	// "fromcsv": filterFromCSV, 		// TODO: implement https://developer.hashicorp.com/terraform/language/functions/csvdecode
+	"fromcsv":    filterFromCSV,
 	// "fromtfvars": filterFromTFVars, 	// TODO: implement https://terragrunt.gruntwork.io/docs/reference/built-in-functions/#read_tfvars_file
 	"get":    filterGet,
 	"ifelse": filterIfElse,
@@ -718,4 +720,46 @@ func filterToBase64(_ *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *ex
 	}
 	encoded := base64.StdEncoding.EncodeToString([]byte(in.String()))
 	return exec.AsValue(encoded)
+}
+
+func filterFromCSV(_ *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	if in.IsError() {
+		return in
+	}
+	if err := params.Take(); err != nil {
+		return exec.AsValue(fmt.Errorf("wrong signature for filter 'fromcsv': %s", err))
+	}
+	if !in.IsString() {
+		return exec.AsValue(fmt.Errorf("filter 'fromcsv' was passed '%s' which is not a string", in.String()))
+	}
+
+	r := strings.NewReader(in.String())
+	cr := csv.NewReader(r)
+
+	// Read the header row first, since that'll tell us which indices
+	// map to which attribute names.
+	headers, err := cr.Read()
+	if err != nil {
+		return exec.AsValue(fmt.Errorf("failed to read CSV header row: %s", err))
+	}
+
+	var rows []interface{}
+	for {
+		cols, err := cr.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return exec.AsValue(fmt.Errorf("failed to read CSV row: %s", err))
+		}
+
+		row := make(map[string]string, len(cols))
+		for index, value := range cols {
+			name := headers[index]
+			row[name] = value
+		}
+		rows = append(rows, row)
+	}
+
+	return exec.AsValue(rows)
 }

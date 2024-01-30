@@ -166,7 +166,6 @@ folder that contains the file being rendered.
 {% endfor %}
 ```
 
-
 ### The `frombase64` filter
 
 The `frombase64` filter is meant to decode a string encoded in base64.
@@ -179,6 +178,24 @@ Will render into:
 
 ```
 Hello World!
+```
+
+### The `fromcsv` filter
+
+The `fromcsv` filter decodes a string containing CSV-formatted data and produces a list of maps representing that data.
+
+CSV stands for Comma-Separated Values, an encoding format for tabular data. There are many variants of CSV, but this function implements the format defined in [RFC 4180](https://datatracker.ietf.org/doc/html/rfc4180).
+
+The first line of the CSV data is interpreted as a "header" row: the values given are used as the keys in the resulting maps. Each subsequent line becomes a single map in the resulting list, matching the keys from the header row with the given values by index. All lines in the file must contain the same number of fields, or this function will produce an error.
+
+```
+{{ "{{" }} 'a,b,c\n1,2,3\n4,5,6' | fromcsv {{ "}}" }}
+```
+
+Will render into:
+
+```
+[{'a': '1', 'b': '2', 'c': '3'}, {'a': '4', 'b': '5', 'c': '6'}]
 ```
 
 ### The `fromjson` filter
