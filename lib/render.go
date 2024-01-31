@@ -11,6 +11,7 @@ import (
 
 	"dario.cat/mergo"
 	"github.com/dustin/go-humanize"
+	tfvars_parser "github.com/musukvl/tfvars-parser"
 	"github.com/nikolalohinski/gonja/v2"
 	"github.com/nikolalohinski/gonja/v2/config"
 	"github.com/nikolalohinski/gonja/v2/exec"
@@ -18,6 +19,24 @@ import (
 	"github.com/pelletier/go-toml/v2"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 	"gopkg.in/yaml.v3"
+)
+
+type valuesFormat string
+
+const (
+	FormatJSON   valuesFormat = "json"
+	FormatYAML   valuesFormat = "yaml"
+	FormatTOML   valuesFormat = "toml"
+	FormatTFVars valuesFormat = "tfvars"
+)
+
+var (
+	SupportedValuesFormats = []string{
+		string(FormatJSON),
+		string(FormatYAML),
+		string(FormatTOML),
+		string(FormatTFVars),
+	}
 )
 
 func Render(ctx *Context) ([]byte, map[string]interface{}, error) {
@@ -73,8 +92,8 @@ func getValues(values []Values) (map[string]interface{}, error) {
 	var mergedValues map[string]interface{}
 	for index, value := range values {
 		layer := make(map[string]interface{})
-		switch strings.ToLower(value.Type) {
-		case "json":
+		switch valuesFormat(strings.ToLower(value.Type)) {
+		case FormatJSON:
 			// Validate JSON context format before unmarshalling with YAML decoder to avoid casting ints to floats
 			// see https://stackoverflow.com/questions/71525600/golang-json-converts-int-to-float-what-can-i-do
 			if err := json.Unmarshal(value.Data, &map[string]interface{}{}); err != nil {
@@ -83,13 +102,21 @@ func getValues(values []Values) (map[string]interface{}, error) {
 			if err := yaml.Unmarshal(value.Data, &layer); err != nil {
 				return nil, fmt.Errorf("failed to unmarshal JSON context: %s", err)
 			}
-		case "yaml":
+		case FormatYAML:
 			if err := yaml.Unmarshal(value.Data, &layer); err != nil {
 				return nil, fmt.Errorf("failed to unmarshal YAML context: %s", err)
 			}
-		case "toml":
+		case FormatTOML:
 			if err := toml.Unmarshal(value.Data, &layer); err != nil {
 				return nil, fmt.Errorf("failed to unmarshal TOML context: %s", err)
+			}
+		case FormatTFVars:
+			varsJson, err := tfvars_parser.Bytes([]byte(value.Data), "", tfvars_parser.Options{Simplify: true})
+			if err != nil {
+				return nil, fmt.Errorf("failed to unmarshal TFVars context: %s", err.Error())
+			}
+			if err := yaml.Unmarshal(varsJson, &layer); err != nil {
+				return nil, err
 			}
 		default:
 			return nil, fmt.Errorf("provided context has an unsupported type: %v", value.Type)

@@ -473,7 +473,51 @@ var _ = Context("data \"jinja_template\" \"test\" { ... }", func() {
 				first item
 				value
 			`))
-
+		})
+		Context("as TFVars", func() {
+			BeforeEach(func() {
+				*terraformCode = heredoc.Doc(`
+					data "jinja_template" "test" {
+						source {
+							template  = <<-EOF
+								{{ data.integer }}
+								{{ data.string }}
+								{{ data.float }}
+								{{ data.boolean }}
+								{{ data.array[0] }}
+								{{ data.object["key"] }}
+							EOF
+							directory = path.module
+						}
+						context {
+							type = "tfvars"
+							data = <<-EOF
+								data = {
+									integer = 123
+									string = "str"
+									float = 1.23
+									boolean = true
+									array = [
+										"first item",
+										"second",
+									]
+									object = {
+										key = "value"
+									}
+								}
+							EOF
+						}
+					}
+				`)
+			})
+			itShouldSetTheExpectedResult(terraformCode, heredoc.Doc(`
+				123
+				str
+				1.23
+				True
+				first item
+				value
+			`))
 		})
 		Context("when passing multiple layers", func() {
 			BeforeEach(func() {

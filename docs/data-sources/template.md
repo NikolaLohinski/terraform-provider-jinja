@@ -60,7 +60,7 @@ data "jinja_template" "render" {
 Required:
 
 - `data` (String) A string holding the serialized context
-- `type` (String) Type of parsing (one of: `yaml`,`json`,`toml`) to perform on the given string
+- `type` (String) Type of parsing (one of: `json`,`yaml`,`toml`,`tfvars`) to perform on the given string
 
 
 <a id="nestedblock--delimiters"></a>

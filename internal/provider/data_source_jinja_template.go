@@ -25,7 +25,6 @@ import (
 
 var (
 	_              datasource.DataSourceWithConfigValidators = &TemplateDataSource{}
-	context_types                                            = []string{"yaml", "json", "toml"}
 	defaultTimeout                                           = time.Second * 30
 )
 
@@ -140,9 +139,9 @@ func (d *TemplateDataSource) Schema(ctx context.Context, req datasource.SchemaRe
 					Attributes: map[string]schema.Attribute{
 						"type": schema.StringAttribute{
 							Required:            true,
-							MarkdownDescription: fmt.Sprintf("Type of parsing (one of: `%s`) to perform on the given string", strings.Join(context_types, "`,`")),
+							MarkdownDescription: fmt.Sprintf("Type of parsing (one of: `%s`) to perform on the given string", strings.Join(lib.SupportedValuesFormats, "`,`")),
 							Validators: []validator.String{
-								stringvalidator.OneOf(context_types...),
+								stringvalidator.OneOf(lib.SupportedValuesFormats...),
 							},
 						},
 						"data": schema.StringAttribute{
