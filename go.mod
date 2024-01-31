@@ -6,6 +6,7 @@ require (
 	dario.cat/mergo v1.0.0
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/dustin/go-humanize v1.0.1
+	github.com/google/uuid v1.6.0
 	github.com/hashicorp/terraform-plugin-framework v1.5.0
 	github.com/hashicorp/terraform-plugin-framework-timeouts v0.4.1
 	github.com/hashicorp/terraform-plugin-framework-validators v0.12.0

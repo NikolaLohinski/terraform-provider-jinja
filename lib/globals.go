@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/google/uuid"
 	"github.com/nikolalohinski/gonja/v2/exec"
 )
 
@@ -25,12 +26,12 @@ var Globals = exec.NewContext(map[string]interface{}{
 		"registry":   Registry,
 	},
 	"abspath": absPathGlobal,
+	"uuid":    uuidGlobal,
 	// "file": func(e *exec.Evaluator, arguments *exec.VarArgs) *exec.Value { return nil }, // TODO: define a global file function similar to the file filter
 	// "fileset": func(e *exec.Evaluator, arguments *exec.VarArgs) *exec.Value { return nil }, // TODO: define a global fileset function similar to the fileset filter
 	// "dirname": func(e *exec.Evaluator, arguments *exec.VarArgs) *exec.Value { return nil }, // TODO: define a global dirname function similar to the dirname filter
 	// "basename": func(e *exec.Evaluator, arguments *exec.VarArgs) *exec.Value { return nil }, // TODO: define a global basename function similar to the basename filter
 	// "env": func(e *exec.Evaluator, arguments *exec.VarArgs) *exec.Value { return nil }, // TODO: define a global env function similar to the env filter // TODO: implement https://terragrunt.gruntwork.io/docs/reference/built-in-functions/#get_env
-	// "uuid":    ...,
 })
 
 func absPathGlobal(e *exec.Evaluator, params *exec.VarArgs) *exec.Value {
@@ -54,4 +55,11 @@ func absPathGlobal(e *exec.Evaluator, params *exec.VarArgs) *exec.Value {
 	}
 
 	return exec.AsValue(p)
+}
+
+func uuidGlobal(e *exec.Evaluator, params *exec.VarArgs) *exec.Value {
+	if err := params.Take(); err != nil {
+		return exec.AsValue(fmt.Errorf("wrong signature for function 'uuid': %s", err))
+	}
+	return exec.AsValue(uuid.New().String())
 }

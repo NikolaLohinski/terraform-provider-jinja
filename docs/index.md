@@ -416,6 +416,14 @@ The `abspath` function takes a `path` string containing a filesystem path and co
 {{ abspath('./path/to/file') }}
 ```
 
+### The `uuid` function
+
+The `uuid` function generates a UUID based on [RFC 4122](https://datatracker.ietf.org/doc/html/rfc4122) and DCE 1.1: Authentication and Security Services as implemented in https://pkg.go.dev/github.com/google/uuid.
+
+```
+{{ uuid() }}
+```
+
 
 ## Filters
 
