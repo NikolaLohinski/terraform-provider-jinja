@@ -1103,6 +1103,24 @@ will render as:
 True
 ```
 
+### The `sha1`, `sha256`, `sha512` and `md5` filters
+
+Classic hashing algorithms that work on strings as depicted in:
+
+- https://pkg.go.dev/crypto/sha1
+- https://pkg.go.dev/crypto/sha256
+- https://pkg.go.dev/crypto/sha512
+- https://pkg.go.dev/crypto/md5
+
+For example:
+
+```
+{{ 'test' | md5 }}
+```
+Will render into:
+```
+098f6bcd4621d373cade4e832627b4f6
+```
 
 ### The `split` filter
 

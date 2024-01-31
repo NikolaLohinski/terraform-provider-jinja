@@ -30,6 +30,7 @@ var Globals = exec.NewContext(map[string]interface{}{
 	// "dirname": func(e *exec.Evaluator, arguments *exec.VarArgs) *exec.Value { return nil }, // TODO: define a global dirname function similar to the dirname filter
 	// "basename": func(e *exec.Evaluator, arguments *exec.VarArgs) *exec.Value { return nil }, // TODO: define a global basename function similar to the basename filter
 	// "env": func(e *exec.Evaluator, arguments *exec.VarArgs) *exec.Value { return nil }, // TODO: define a global env function similar to the env filter // TODO: implement https://terragrunt.gruntwork.io/docs/reference/built-in-functions/#get_env
+	// "uuid":    ...,
 })
 
 func absPathGlobal(e *exec.Evaluator, params *exec.VarArgs) *exec.Value {

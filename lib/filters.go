@@ -2,6 +2,10 @@ package lib
 
 import (
 	"bytes"
+	"crypto/md5"
+	"crypto/sha1"
+	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/base64"
 	"encoding/csv"
 	"fmt"
@@ -51,10 +55,10 @@ var Filters = exec.FilterSet{
 	"keys":       filterKeys,
 	"match":      filterMatch,
 	// "merge": filterMerge, 	// TODO: implement something like merge/mergeOverwrite https://masterminds.github.io/sprig/dicts.html
-	// "sha1": filterSha1, 		// TODO: implement https://developer.hashicorp.com/terraform/language/functions/sha1
-	// "sha256": filterSha256, 	// TODO: implement https://developer.hashicorp.com/terraform/language/functions/sha256
-	// "sha512": filterSha512, 	// TODO: implement https://developer.hashicorp.com/terraform/language/functions/sha512
-	// "uuid": filterUUID, 		// TODO: implement https://developer.hashicorp.com/terraform/language/functions/uuid
+	"sha1":     filterSha1,
+	"sha256":   filterSha256,
+	"sha512":   filterSha512,
+	"md5":      filterMd5,
 	"split":    filterSplit,
 	"totoml":   filterToToml,
 	"toyaml":   filterToYAML,
@@ -785,4 +789,55 @@ func filterFromTFVars(_ *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *
 	}
 
 	return exec.AsValue(vars)
+}
+
+func filterSha1(_ *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	if in.IsError() {
+		return in
+	}
+	if err := params.Take(); err != nil {
+		return exec.AsValue(fmt.Errorf("wrong signature for filter 'sha1': %s", err))
+	}
+	if !in.IsString() {
+		return exec.AsValue(fmt.Errorf("filter 'sha1' was passed '%s' which is not a string", in.String()))
+	}
+	return exec.AsValue(fmt.Sprintf("%x", sha1.Sum([]byte(in.String()))))
+}
+
+func filterSha256(_ *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	if in.IsError() {
+		return in
+	}
+	if err := params.Take(); err != nil {
+		return exec.AsValue(fmt.Errorf("wrong signature for filter 'sha256': %s", err))
+	}
+	if !in.IsString() {
+		return exec.AsValue(fmt.Errorf("filter 'sha256' was passed '%s' which is not a string", in.String()))
+	}
+	return exec.AsValue(fmt.Sprintf("%x", sha256.Sum256([]byte(in.String()))))
+}
+func filterSha512(_ *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	if in.IsError() {
+		return in
+	}
+	if err := params.Take(); err != nil {
+		return exec.AsValue(fmt.Errorf("wrong signature for filter 'sha512': %s", err))
+	}
+	if !in.IsString() {
+		return exec.AsValue(fmt.Errorf("filter 'sha512' was passed '%s' which is not a string", in.String()))
+	}
+	return exec.AsValue(fmt.Sprintf("%x", sha512.Sum512([]byte(in.String()))))
+}
+
+func filterMd5(_ *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	if in.IsError() {
+		return in
+	}
+	if err := params.Take(); err != nil {
+		return exec.AsValue(fmt.Errorf("wrong signature for filter 'md5': %s", err))
+	}
+	if !in.IsString() {
+		return exec.AsValue(fmt.Errorf("filter 'md5' was passed '%s' which is not a string", in.String()))
+	}
+	return exec.AsValue(fmt.Sprintf("%x", md5.Sum([]byte(in.String()))))
 }

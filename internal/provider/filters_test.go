@@ -928,4 +928,76 @@ var _ = Context("filters", func() {
 			itShouldFailToRender(terraformCode, "thrown")
 		})
 	})
+	Context("sha1", func() {
+		BeforeEach(func() {
+			*template = `{{- 'test' | sha1 -}}`
+		})
+		itShouldSetTheExpectedResult(terraformCode, "a94a8fe5ccb19ba61c4c0873d391e987982fbbd3")
+		Context("when the input is not a string", func() {
+			BeforeEach(func() {
+				*template = `{{- True | sha1 -}}`
+			})
+			itShouldFailToRender(terraformCode, "filter 'sha1' was passed 'True' which is not a string")
+		})
+		Context("when the input is an error", func() {
+			BeforeEach(func() {
+				*template = `{{- "thrown" | fail | sha1 -}}`
+			})
+			itShouldFailToRender(terraformCode, "thrown")
+		})
+	})
+	Context("sha256", func() {
+		BeforeEach(func() {
+			*template = `{{- 'test' | sha256 -}}`
+		})
+		itShouldSetTheExpectedResult(terraformCode, "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
+		Context("when the input is not a string", func() {
+			BeforeEach(func() {
+				*template = `{{- True | sha256 -}}`
+			})
+			itShouldFailToRender(terraformCode, "filter 'sha256' was passed 'True' which is not a string")
+		})
+		Context("when the input is an error", func() {
+			BeforeEach(func() {
+				*template = `{{- "thrown" | fail | sha256 -}}`
+			})
+			itShouldFailToRender(terraformCode, "thrown")
+		})
+	})
+	Context("sha512", func() {
+		BeforeEach(func() {
+			*template = `{{- 'test' | sha512 -}}`
+		})
+		itShouldSetTheExpectedResult(terraformCode, "ee26b0dd4af7e749aa1a8ee3c10ae9923f618980772e473f8819a5d4940e0db27ac185f8a0e1d5f84f88bc887fd67b143732c304cc5fa9ad8e6f57f50028a8ff")
+		Context("when the input is not a string", func() {
+			BeforeEach(func() {
+				*template = `{{- True | sha512 -}}`
+			})
+			itShouldFailToRender(terraformCode, "filter 'sha512' was passed 'True' which is not a string")
+		})
+		Context("when the input is an error", func() {
+			BeforeEach(func() {
+				*template = `{{- "thrown" | fail | sha512 -}}`
+			})
+			itShouldFailToRender(terraformCode, "thrown")
+		})
+	})
+	Context("md5", func() {
+		BeforeEach(func() {
+			*template = `{{- 'test' | md5 -}}`
+		})
+		itShouldSetTheExpectedResult(terraformCode, "098f6bcd4621d373cade4e832627b4f6")
+		Context("when the input is not a string", func() {
+			BeforeEach(func() {
+				*template = `{{- True | md5 -}}`
+			})
+			itShouldFailToRender(terraformCode, "filter 'md5' was passed 'True' which is not a string")
+		})
+		Context("when the input is an error", func() {
+			BeforeEach(func() {
+				*template = `{{- "thrown" | fail | md5 -}}`
+			})
+			itShouldFailToRender(terraformCode, "thrown")
+		})
+	})
 })
