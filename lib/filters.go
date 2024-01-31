@@ -15,13 +15,13 @@ import (
 
 	"github.com/dustin/go-humanize"
 	json "github.com/json-iterator/go"
+	tfvars_parser "github.com/musukvl/tfvars-parser"
+	"github.com/nikolalohinski/gonja/v2/exec"
 	"github.com/pelletier/go-toml/v2"
 	"github.com/pkg/errors"
 	"github.com/yargevad/filepathx"
 	"golang.org/x/exp/slices"
 	"gopkg.in/yaml.v3"
-
-	"github.com/nikolalohinski/gonja/v2/exec"
 )
 
 var Filters = exec.FilterSet{
@@ -44,12 +44,12 @@ var Filters = exec.FilterSet{
 	"fromtoml":   filterFromTOML,
 	"frombase64": filterFromBase64,
 	"fromcsv":    filterFromCSV,
-	// "fromtfvars": filterFromTFVars, 	// TODO: implement https://terragrunt.gruntwork.io/docs/reference/built-in-functions/#read_tfvars_file
-	"get":    filterGet,
-	"ifelse": filterIfElse,
-	"insert": filterInsert,
-	"keys":   filterKeys,
-	"match":  filterMatch,
+	"fromtfvars": filterFromTFVars,
+	"get":        filterGet,
+	"ifelse":     filterIfElse,
+	"insert":     filterInsert,
+	"keys":       filterKeys,
+	"match":      filterMatch,
 	// "merge": filterMerge, 	// TODO: implement something like merge/mergeOverwrite https://masterminds.github.io/sprig/dicts.html
 	// "sha1": filterSha1, 		// TODO: implement https://developer.hashicorp.com/terraform/language/functions/sha1
 	// "sha256": filterSha256, 	// TODO: implement https://developer.hashicorp.com/terraform/language/functions/sha256
@@ -762,4 +762,27 @@ func filterFromCSV(_ *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 	}
 
 	return exec.AsValue(rows)
+}
+
+func filterFromTFVars(_ *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	if in.IsError() {
+		return in
+	}
+	if err := params.Take(); err != nil {
+		return exec.AsValue(fmt.Errorf("wrong signature for filter 'fromtfvars': %s", err))
+	}
+	if !in.IsString() {
+		return exec.AsValue(fmt.Errorf("filter 'fromtfvars' was passed '%s' which is not a string", in.String()))
+	}
+	varsJson, err := tfvars_parser.Bytes([]byte(in.String()), "", tfvars_parser.Options{Simplify: true})
+	if err != nil {
+		return exec.AsValue(fmt.Errorf("failed to parse '%s' as tfvars: %s", in.String(), err.Error()))
+	}
+
+	vars := make(map[string]interface{})
+	if err := yaml.Unmarshal(varsJson, &vars); err != nil {
+		return exec.AsValue(err)
+	}
+
+	return exec.AsValue(vars)
 }

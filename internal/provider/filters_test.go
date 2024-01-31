@@ -904,4 +904,28 @@ var _ = Context("filters", func() {
 			itShouldFailToRender(terraformCode, "thrown")
 		})
 	})
+	Context("fromtfvars", func() {
+		BeforeEach(func() {
+			*template = `{{- 'foo = "bar"\nobj = {\ntest = 123\n}' | fromtfvars -}}`
+		})
+		itShouldSetTheExpectedResult(terraformCode, "{'foo': 'bar', 'obj': {'test': 123}}")
+		Context("when the input is not a string", func() {
+			BeforeEach(func() {
+				*template = `{{- True | fromtfvars -}}`
+			})
+			itShouldFailToRender(terraformCode, "filter 'fromtfvars' was passed 'True' which is not a string")
+		})
+		Context("when the input is not a valid tfvars file", func() {
+			BeforeEach(func() {
+				*template = `{{- "nope,;ssss" | fromtfvars -}}`
+			})
+			itShouldFailToRender(terraformCode, "failed to parse 'nope,;ssss' as tfvars")
+		})
+		Context("when the input is an error", func() {
+			BeforeEach(func() {
+				*template = `{{- "thrown" | fail | fromtfvars -}}`
+			})
+			itShouldFailToRender(terraformCode, "thrown")
+		})
+	})
 })

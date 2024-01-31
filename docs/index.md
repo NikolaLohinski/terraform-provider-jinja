@@ -1005,6 +1005,19 @@ Will render into:
 value
 ```
 
+### The `fromtfvars` filter
+
+The `fromtfvars` filter is meant to parse a string with terraform variable definitions as formalized in [`tfvars` files](https://developer.hashicorp.com/terraform/language/values/variables#variable-definitions-tfvars-files) into a useable object.
+
+```
+{%- set tfvars = 'foo = { bar = "test" }' | fromtfvars -%}
+{{ tfvars.foo.bar }}
+```
+Will render into:
+```
+test
+```
+
 ### The `fromyaml` filter
 
 The `fromyaml` filter is meant to parse a YAML string into a useable object.
