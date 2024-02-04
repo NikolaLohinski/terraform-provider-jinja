@@ -59,7 +59,7 @@ var _ = Context("filters", func() {
 			BeforeEach(func() {
 				*template = `{{- true | add("does not matter") -}}`
 			})
-			itShouldFailToRender(terraformCode, "filter 'add' was passed 'True' which is neither a dict nor a list")
+			itShouldFailToRender(terraformCode, "True is neither a dict nor a list")
 		})
 		Context("when the input is an error", func() {
 			BeforeEach(func() {
@@ -80,7 +80,7 @@ var _ = Context("filters", func() {
 			BeforeEach(func() {
 				*template = `{{- true | append("does not matter") -}}`
 			})
-			itShouldFailToRender(terraformCode, "filter 'append' was passed 'True' which is not a list")
+			itShouldFailToRender(terraformCode, "True is not a list")
 		})
 		Context("when the input is an error", func() {
 			BeforeEach(func() {
@@ -98,7 +98,7 @@ var _ = Context("filters", func() {
 			BeforeEach(func() {
 				*template = `{{- true | basename -}}`
 			})
-			itShouldFailToRender(terraformCode, "filter 'basename' was passed 'True' which is not a string")
+			itShouldFailToRender(terraformCode, "True is not a string")
 		})
 		Context("when the input is an error", func() {
 			BeforeEach(func() {
@@ -174,13 +174,13 @@ var _ = Context("filters", func() {
 			BeforeEach(func() {
 				*template = `{{- [] | bool -}}`
 			})
-			itShouldFailToRender(terraformCode, "filter 'bool' failed to cast: \\[\\]")
+			itShouldFailToRender(terraformCode, "failed to cast: \\[\\]")
 		})
 		Context("when the input is a dict", func() {
 			BeforeEach(func() {
 				*template = `{{- {} | bool -}}`
 			})
-			itShouldFailToRender(terraformCode, "filter 'bool' failed to cast: {}")
+			itShouldFailToRender(terraformCode, "failed to cast: {}")
 		})
 		Context("when the input is an error", func() {
 			BeforeEach(func() {
@@ -207,13 +207,13 @@ var _ = Context("filters", func() {
 			BeforeEach(func() {
 				*template = `{{- true | concat([]) -}}`
 			})
-			itShouldFailToRender(terraformCode, "filter 'concat' was passed 'True' which is not a list")
+			itShouldFailToRender(terraformCode, "True is not a list")
 		})
 		Context("when the argument is not a list", func() {
 			BeforeEach(func() {
 				*template = `{{- [] | concat(true) -}}`
 			})
-			itShouldFailToRender(terraformCode, "1st argument passed to filter 'concat' is not a list: True")
+			itShouldFailToRender(terraformCode, "1st argument True is not a list")
 		})
 		Context("when the input is an error", func() {
 			BeforeEach(func() {
@@ -231,7 +231,7 @@ var _ = Context("filters", func() {
 			BeforeEach(func() {
 				*template = `{{- true | dirname -}}`
 			})
-			itShouldFailToRender(terraformCode, "filter 'dir|dirname' was passed 'True' which is not a string")
+			itShouldFailToRender(terraformCode, "True is not a string")
 		})
 		Context("when the input is an error", func() {
 			BeforeEach(func() {
@@ -289,7 +289,7 @@ var _ = Context("filters", func() {
 			BeforeEach(func() {
 				*template = `{{- true | file -}}`
 			})
-			itShouldFailToRender(terraformCode, "filter 'file' was passed 'True' which is not a string")
+			itShouldFailToRender(terraformCode, "True is not a string")
 		})
 	})
 	Context("fileset", Ordered, func() {
@@ -311,7 +311,7 @@ var _ = Context("filters", func() {
 			BeforeEach(func() {
 				*template = `{{- true | fileset -}}`
 			})
-			itShouldFailToRender(terraformCode, "filter 'fileset' was passed 'True' which is not a string")
+			itShouldFailToRender(terraformCode, "True is not a string")
 		})
 	})
 	Context("flatten", func() {
@@ -323,7 +323,7 @@ var _ = Context("filters", func() {
 			BeforeEach(func() {
 				*template = `{{- true | flatten -}}`
 			})
-			itShouldFailToRender(terraformCode, "filter 'flatten' was passed 'True' which is not a list")
+			itShouldFailToRender(terraformCode, "True is not a list")
 		})
 		Context("when the input is an error", func() {
 			BeforeEach(func() {
@@ -362,13 +362,13 @@ var _ = Context("filters", func() {
 			BeforeEach(func() {
 				*template = `{{- true | fromjson -}}`
 			})
-			itShouldFailToRender(terraformCode, "filter 'fromjson' was passed 'True' which is not a string or is empty")
+			itShouldFailToRender(terraformCode, "True is not a non-empty string")
 		})
 		Context("when the input is an empty string", func() {
 			BeforeEach(func() {
 				*template = `{{- "" | fromjson -}}`
 			})
-			itShouldFailToRender(terraformCode, "filter 'fromjson' was passed '' which is not a string or is empty")
+			itShouldFailToRender(terraformCode, " is not a non-empty string")
 		})
 		Context("when the input is an error", func() {
 			BeforeEach(func() {
@@ -406,13 +406,13 @@ var _ = Context("filters", func() {
 			BeforeEach(func() {
 				*template = `{{- true | fromyaml -}}`
 			})
-			itShouldFailToRender(terraformCode, "filter 'fromyaml' was passed 'True' which is not a string or is empty")
+			itShouldFailToRender(terraformCode, "True is not a non-empty string")
 		})
 		Context("when the input is an empty string", func() {
 			BeforeEach(func() {
 				*template = `{{- "" | fromyaml -}}`
 			})
-			itShouldFailToRender(terraformCode, "filter 'fromyaml' was passed '' which is not a string or is empty")
+			itShouldFailToRender(terraformCode, " is not a non-empty string")
 		})
 		Context("when the input is an error", func() {
 			BeforeEach(func() {
@@ -449,13 +449,13 @@ var _ = Context("filters", func() {
 			BeforeEach(func() {
 				*template = `{{- true | fromtoml -}}`
 			})
-			itShouldFailToRender(terraformCode, "filter 'fromtoml' was passed 'True' which is not a string or is empty")
+			itShouldFailToRender(terraformCode, "True is not a non-empty string")
 		})
 		Context("when the input is an empty string", func() {
 			BeforeEach(func() {
 				*template = `{{- "" | fromtoml -}}`
 			})
-			itShouldFailToRender(terraformCode, "filter 'fromtoml' was passed '' which is not a string or is empty")
+			itShouldFailToRender(terraformCode, " is not a non-empty string")
 		})
 		Context("when the input is an error", func() {
 			BeforeEach(func() {
@@ -479,7 +479,7 @@ var _ = Context("filters", func() {
 			BeforeEach(func() {
 				*template = `{{- true | get("nothing") -}}`
 			})
-			itShouldFailToRender(terraformCode, "filter 'get' was passed 'True' which is not a dict")
+			itShouldFailToRender(terraformCode, "True is not a dict")
 		})
 		Context("when the input is an error", func() {
 			BeforeEach(func() {
@@ -524,9 +524,9 @@ var _ = Context("filters", func() {
 		`))
 		Context("when the input is not a dict", func() {
 			BeforeEach(func() {
-				*template = `{{- [] | insert("does not matter") -}}`
+				*template = `{{- [] | insert("does not", "matter") -}}`
 			})
-			itShouldFailToRender(terraformCode, "filter 'insert' was passed '\\[\\]' which is not a dict")
+			itShouldFailToRender(terraformCode, "\\[\\] is not a dict")
 		})
 		Context("when the input is an error", func() {
 			BeforeEach(func() {
@@ -544,7 +544,7 @@ var _ = Context("filters", func() {
 			BeforeEach(func() {
 				*template = `{{- [] | keys -}}`
 			})
-			itShouldFailToRender(terraformCode, "filter 'keys' was passed '\\[\\]' which is not a dict")
+			itShouldFailToRender(terraformCode, "\\[\\] is not a dict")
 		})
 		Context("when the input is an error", func() {
 			BeforeEach(func() {
@@ -571,13 +571,13 @@ var _ = Context("filters", func() {
 			BeforeEach(func() {
 				*template = `{{- [] | match("does not matter") -}}`
 			})
-			itShouldFailToRender(terraformCode, "filter 'match' was passed '\\[\\]' which is not a string")
+			itShouldFailToRender(terraformCode, "\\[\\] is not a string")
 		})
 		Context("when the argument is not a string", func() {
 			BeforeEach(func() {
 				*template = `{{- "does not matter" | match(True) -}}`
 			})
-			itShouldFailToRender(terraformCode, "1st argument passed to filter 'match' is not a string: True")
+			itShouldFailToRender(terraformCode, "True is not a string")
 		})
 		Context("when the input is an error", func() {
 			BeforeEach(func() {
@@ -602,13 +602,13 @@ var _ = Context("filters", func() {
 			BeforeEach(func() {
 				*template = `{{- [] | split("does not matter") -}}`
 			})
-			itShouldFailToRender(terraformCode, "filter 'split' was passed '\\[\\]' which is not a string")
+			itShouldFailToRender(terraformCode, "\\[\\] is not a string")
 		})
 		Context("when the argument is not a string", func() {
 			BeforeEach(func() {
 				*template = `{{- "does not matter" | split(True) -}}`
 			})
-			itShouldFailToRender(terraformCode, "1st argument passed to filter 'split' is not a string: True")
+			itShouldFailToRender(terraformCode, "True is not a string")
 		})
 		Context("when the input is an error", func() {
 			BeforeEach(func() {
@@ -713,13 +713,13 @@ var _ = Context("filters", func() {
 			BeforeEach(func() {
 				*template = `{{- [] | unset("does not matter") -}}`
 			})
-			itShouldFailToRender(terraformCode, "filter 'unset' was passed '\\[\\]' which is not a dict")
+			itShouldFailToRender(terraformCode, "\\[\\] is not a dict")
 		})
 		Context("when the argument is not a string", func() {
 			BeforeEach(func() {
 				*template = `{{- {} | unset(True) -}}`
 			})
-			itShouldFailToRender(terraformCode, "1st argument passed to filter 'unset' is not a string: True")
+			itShouldFailToRender(terraformCode, "True is not a string")
 		})
 		Context("when the input is an error", func() {
 			BeforeEach(func() {
@@ -737,7 +737,7 @@ var _ = Context("filters", func() {
 			BeforeEach(func() {
 				*template = `{{- [] | values -}}`
 			})
-			itShouldFailToRender(terraformCode, "filter 'values' was passed '\\[\\]' which is not a dict")
+			itShouldFailToRender(terraformCode, "\\[\\] is not a dict")
 		})
 		Context("when the input is an error", func() {
 			BeforeEach(func() {
@@ -764,7 +764,7 @@ var _ = Context("filters", func() {
 			BeforeEach(func() {
 				*template = `{{- true | abspath -}}`
 			})
-			itShouldFailToRender(terraformCode, "filter 'abspath' was passed 'True' which is not a string")
+			itShouldFailToRender(terraformCode, "True is not a string")
 		})
 	})
 	Context("distinct", func() {
@@ -794,7 +794,7 @@ var _ = Context("filters", func() {
 			BeforeEach(func() {
 				*template = `{{- {} | distinct -}}`
 			})
-			itShouldFailToRender(terraformCode, "filter 'distinct' was passed '{}' which is not a list")
+			itShouldFailToRender(terraformCode, "{} is not a list")
 		})
 		Context("when the input is an error", func() {
 			BeforeEach(func() {
@@ -829,7 +829,7 @@ var _ = Context("filters", func() {
 			BeforeEach(func() {
 				*template = `{{- True | env -}}`
 			})
-			itShouldFailToRender(terraformCode, "filter 'env' was passed 'True' which is not a string")
+			itShouldFailToRender(terraformCode, "True is not a string")
 		})
 		Context("when the input is an error", func() {
 			BeforeEach(func() {
@@ -847,7 +847,7 @@ var _ = Context("filters", func() {
 			BeforeEach(func() {
 				*template = `{{- True | tobase64 -}}`
 			})
-			itShouldFailToRender(terraformCode, "filter 'tobase64' was passed 'True' which is not a string")
+			itShouldFailToRender(terraformCode, "True is not a string")
 		})
 		Context("when the input is an error", func() {
 			BeforeEach(func() {
@@ -865,7 +865,7 @@ var _ = Context("filters", func() {
 			BeforeEach(func() {
 				*template = `{{- True | frombase64 -}}`
 			})
-			itShouldFailToRender(terraformCode, "filter 'frombase64' was passed 'True' which is not a string")
+			itShouldFailToRender(terraformCode, "True is not a string")
 		})
 		Context("when the input is not a valid base64 encoding", func() {
 			BeforeEach(func() {
@@ -889,7 +889,7 @@ var _ = Context("filters", func() {
 			BeforeEach(func() {
 				*template = `{{- True | fromcsv -}}`
 			})
-			itShouldFailToRender(terraformCode, "filter 'fromcsv' was passed 'True' which is not a string")
+			itShouldFailToRender(terraformCode, "True is not a string")
 		})
 		Context("when the input is not a valid csv", func() {
 			BeforeEach(func() {
@@ -913,7 +913,7 @@ var _ = Context("filters", func() {
 			BeforeEach(func() {
 				*template = `{{- True | fromtfvars -}}`
 			})
-			itShouldFailToRender(terraformCode, "filter 'fromtfvars' was passed 'True' which is not a string")
+			itShouldFailToRender(terraformCode, "True is not a string")
 		})
 		Context("when the input is not a valid tfvars file", func() {
 			BeforeEach(func() {
@@ -937,7 +937,7 @@ var _ = Context("filters", func() {
 			BeforeEach(func() {
 				*template = `{{- True | sha1 -}}`
 			})
-			itShouldFailToRender(terraformCode, "filter 'sha1' was passed 'True' which is not a string")
+			itShouldFailToRender(terraformCode, "True is not a string")
 		})
 		Context("when the input is an error", func() {
 			BeforeEach(func() {
@@ -955,7 +955,7 @@ var _ = Context("filters", func() {
 			BeforeEach(func() {
 				*template = `{{- True | sha256 -}}`
 			})
-			itShouldFailToRender(terraformCode, "filter 'sha256' was passed 'True' which is not a string")
+			itShouldFailToRender(terraformCode, "True is not a string")
 		})
 		Context("when the input is an error", func() {
 			BeforeEach(func() {
@@ -973,7 +973,7 @@ var _ = Context("filters", func() {
 			BeforeEach(func() {
 				*template = `{{- True | sha512 -}}`
 			})
-			itShouldFailToRender(terraformCode, "filter 'sha512' was passed 'True' which is not a string")
+			itShouldFailToRender(terraformCode, "True is not a string")
 		})
 		Context("when the input is an error", func() {
 			BeforeEach(func() {
@@ -991,7 +991,7 @@ var _ = Context("filters", func() {
 			BeforeEach(func() {
 				*template = `{{- True | md5 -}}`
 			})
-			itShouldFailToRender(terraformCode, "filter 'md5' was passed 'True' which is not a string")
+			itShouldFailToRender(terraformCode, "invalid call to filter 'md5': True is not a string")
 		})
 		Context("when the input is an error", func() {
 			BeforeEach(func() {
