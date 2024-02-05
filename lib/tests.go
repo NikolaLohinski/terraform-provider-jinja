@@ -17,7 +17,7 @@ func testEmpty(ctx *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, e
 		return false, errors.New(in.Error())
 	}
 	if !in.IsList() && !in.IsDict() && !in.IsString() {
-		return false, exec.AsValue(fmt.Errorf("test 'empty' can only be called for list, dict or string"))
+		return false, exec.ErrInvalidCall(fmt.Errorf("%s is neither a list, a dict nor a string", in.String()))
 	} else {
 		return in.Len() == 0, nil
 	}

@@ -73,7 +73,7 @@ func filterBool(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.V
 		return in
 	}
 	if err := params.Take(); err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	switch {
 	case in.IsBool():
@@ -108,7 +108,7 @@ func filterBool(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.V
 	case in.IsNil():
 		return exec.AsValue(false)
 	default:
-		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("failed to cast: %s", in.String())))
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("failed to cast: %s", in.String())))
 	}
 }
 
@@ -125,7 +125,7 @@ func filterIfElse(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 		exec.PositionalArgument("if", nil, exec.AnyArgument(&ifValue)),
 		exec.PositionalArgument("else", nil, exec.AnyArgument(&elseValue)),
 	); err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if in.IsTrue() {
 		return exec.ToValue(ifValue)
@@ -148,10 +148,10 @@ func filterGet(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Va
 		exec.KeywordArgument("strict", exec.AsValue(false), exec.BoolArgument(&strict)),
 		exec.KeywordArgument("default", exec.AsValue(nil), exec.AnyArgument(&fallback)),
 	); err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if !in.IsDict() {
-		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("%s is not a dict", in.String())))
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a dict", in.String())))
 	}
 	value, ok := in.GetItem(key)
 	if !ok {
@@ -170,11 +170,11 @@ func filterValues(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 		return in
 	}
 	if err := params.Take(); err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 
 	if !in.IsDict() {
-		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("%s is not a dict", in.String())))
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a dict", in.String())))
 	}
 
 	out := make([]interface{}, 0)
@@ -191,10 +191,10 @@ func filterKeys(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.V
 		return in
 	}
 	if err := params.Take(); err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if !in.IsDict() {
-		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("%s is not a dict", in.String())))
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a dict", in.String())))
 	}
 	out := make([]interface{}, 0)
 	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
@@ -206,7 +206,7 @@ func filterKeys(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.V
 
 func filterTry(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
 	if err := params.Take(); err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if in == nil || in.IsError() || !in.IsTrue() {
 		return exec.AsValue(nil)
@@ -219,10 +219,10 @@ func filterFromJSON(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *ex
 		return in
 	}
 	if err := params.Take(); err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if !in.IsString() || in.String() == "" {
-		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("%s is not a non-empty string", in.String())))
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a non-empty string", in.String())))
 	}
 	object := new(interface{})
 	// first check if it's a JSON indeed
@@ -241,7 +241,7 @@ func filterConcat(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 		return in
 	}
 	if !in.IsList() {
-		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("%s is not a list", in.String())))
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a list", in.String())))
 	}
 	out := make([]interface{}, 0)
 	in.Iterate(func(idx, count int, item, _ *exec.Value) bool {
@@ -250,7 +250,7 @@ func filterConcat(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 	}, func() {})
 	for index, argument := range params.Args {
 		if !argument.IsList() {
-			return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("%s argument %s is not a list", humanize.Ordinal(index+1), argument.String())))
+			return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s argument %s is not a list", humanize.Ordinal(index+1), argument.String())))
 		}
 		argument.Iterate(func(idx, count int, item, _ *exec.Value) bool {
 			out = append(out, item.Interface())
@@ -270,10 +270,10 @@ func filterSplit(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.
 	if err := params.Take(
 		exec.PositionalArgument("delimiter", nil, exec.StringArgument(&delimiter)),
 	); err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if !in.IsString() {
-		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("%s is not a string", in.String())))
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a string", in.String())))
 	}
 
 	output := make([]interface{}, 0)
@@ -297,7 +297,7 @@ func filterAdd(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Va
 		return filterInsert(e, in, params)
 	}
 
-	return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("%s is neither a dict nor a list", in.String())))
+	return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is neither a dict nor a list", in.String())))
 }
 
 func filterFail(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
@@ -305,7 +305,7 @@ func filterFail(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.V
 		return exec.AsValue(fmt.Errorf("%s: %s", in.String(), in.Error()))
 	}
 	if err := params.Take(); err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	return exec.AsValue(errors.New(in.String()))
 }
@@ -322,10 +322,10 @@ func filterInsert(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 		exec.PositionalArgument("key", nil, exec.StringArgument(&key)),
 		exec.PositionalArgument("value", nil, exec.AnyArgument(&value)),
 	); err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if !in.IsDict() {
-		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("%s is not a dict", in.String())))
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a dict", in.String())))
 	}
 
 	out := make(map[string]interface{})
@@ -348,10 +348,10 @@ func filterUnset(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.
 	if err := params.Take(
 		exec.PositionalArgument("key", nil, exec.StringArgument(&key)),
 	); err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if !in.IsDict() {
-		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("%s is not a dict", in.String())))
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a dict", in.String())))
 	}
 
 	out := make(map[string]interface{})
@@ -376,10 +376,10 @@ func filterAppend(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 	if err := params.Take(
 		exec.PositionalArgument("item", nil, exec.AnyArgument(&item)),
 	); err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if !in.IsList() {
-		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("%s is not a list", in.String())))
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a list", in.String())))
 	}
 
 	out := make([]interface{}, 0)
@@ -397,10 +397,10 @@ func filterFlatten(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 		return in
 	}
 	if err := params.Take(); err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if !in.IsList() {
-		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("%s is not a list", in.String())))
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a list", in.String())))
 	}
 
 	out := make([]interface{}, 0)
@@ -424,10 +424,10 @@ func filterFileSet(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 		return in
 	}
 	if err := params.Take(); err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if !in.IsString() {
-		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("%s is not a string", in.String())))
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a string", in.String())))
 	}
 
 	base, err := e.Loader.Resolve(".")
@@ -446,10 +446,10 @@ func filterFile(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.V
 		return in
 	}
 	if err := params.Take(); err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if !in.IsString() {
-		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("%s is not a string", in.String())))
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a string", in.String())))
 	}
 
 	path := in.String()
@@ -477,10 +477,10 @@ func filterBasename(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *ex
 		return in
 	}
 	if err := params.Take(); err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if !in.IsString() {
-		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("%s is not a string", in.String())))
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a string", in.String())))
 	}
 
 	return exec.AsValue(filepath.Base(in.String()))
@@ -491,10 +491,10 @@ func filterDirname(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 		return in
 	}
 	if err := params.Take(); err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if !in.IsString() {
-		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("%s is not a string", in.String())))
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a string", in.String())))
 	}
 
 	return exec.AsValue(filepath.Dir(in.String()))
@@ -505,10 +505,10 @@ func filterFromYAML(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *ex
 		return in
 	}
 	if err := params.Take(); err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if !in.IsString() || in.String() == "" {
-		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("%s is not a non-empty string", in.String())))
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a non-empty string", in.String())))
 	}
 	var object interface{}
 	if err := yaml.Unmarshal([]byte(in.String()), &object); err != nil {
@@ -527,10 +527,10 @@ func filterToYAML(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 	if err := params.Take(
 		exec.KeywordArgument("indent", exec.AsValue(2), exec.IntArgument(&indent)),
 	); err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if in.IsNil() {
-		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("%s is undefined", in.String())))
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is undefined", in.String())))
 	}
 
 	output := bytes.NewBuffer(nil)
@@ -555,10 +555,10 @@ func filterToToml(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 	}
 
 	if err := params.Take(); err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if in.IsNil() {
-		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("%s is undefined", in.String())))
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is undefined", in.String())))
 	}
 
 	casted := in.ToGoSimpleType(false)
@@ -579,10 +579,10 @@ func filterFromTOML(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *ex
 		return in
 	}
 	if err := params.Take(); err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if !in.IsString() || in.String() == "" {
-		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("%s is not a non-empty string", in.String())))
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a non-empty string", in.String())))
 	}
 	object := new(interface{})
 	if err := toml.Unmarshal([]byte(in.String()), object); err != nil {
@@ -601,14 +601,14 @@ func filterMatch(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.
 	if err := params.Take(
 		exec.KeywordArgument("regex", exec.AsValue(2), exec.StringArgument(&regex)),
 	); err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if !in.IsString() {
-		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("%s is not a string", in.String())))
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a string", in.String())))
 	}
 	matcher, err := regexp.Compile(regex)
 	if err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("failed to compile: %s: %s", regex, err)))
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("failed to compile: %s: %s", regex, err)))
 	}
 
 	return exec.AsValue(matcher.MatchString(in.String()))
@@ -619,10 +619,10 @@ func filterAbsPath(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 		return in
 	}
 	if err := params.Take(); err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if !in.IsString() {
-		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("%s is not a string", in.String())))
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a string", in.String())))
 	}
 	resolved, err := e.Loader.Resolve(in.String())
 	if err != nil {
@@ -642,10 +642,10 @@ func filterDistinct(_ *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *ex
 		return in
 	}
 	if err := params.Take(); err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("wrong signature for filter 'distinct': %s", err)))
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("wrong signature for filter 'distinct': %s", err)))
 	}
 	if !in.IsList() {
-		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("%s is not a list", in.String())))
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a list", in.String())))
 	}
 	out := make([]interface{}, 0)
 	in.Iterate(func(idx, count int, item, _ *exec.Value) bool {
@@ -671,10 +671,10 @@ func filterEnv(_ *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Va
 	if err := params.Take(
 		exec.KeywordArgument("default", exec.AsValue(""), exec.StringArgument(&defaultValue)),
 	); err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if !in.IsString() {
-		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("%s is not a string", in.String())))
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a string", in.String())))
 	}
 	value, ok := os.LookupEnv(in.String())
 	if !ok {
@@ -692,10 +692,10 @@ func filterFromBase64(_ *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *
 		return in
 	}
 	if err := params.Take(); err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if !in.IsString() {
-		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("%s is not a string", in.String())))
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a string", in.String())))
 	}
 	decoded, err := base64.StdEncoding.DecodeString(in.String())
 	if err != nil {
@@ -709,10 +709,10 @@ func filterToBase64(_ *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *ex
 		return in
 	}
 	if err := params.Take(); err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if !in.IsString() {
-		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("%s is not a string", in.String())))
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a string", in.String())))
 	}
 	encoded := base64.StdEncoding.EncodeToString([]byte(in.String()))
 	return exec.AsValue(encoded)
@@ -723,10 +723,10 @@ func filterFromCSV(_ *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 		return in
 	}
 	if err := params.Take(); err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if !in.IsString() {
-		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("%s is not a string", in.String())))
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a string", in.String())))
 	}
 
 	r := strings.NewReader(in.String())
@@ -765,10 +765,10 @@ func filterFromTFVars(_ *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *
 		return in
 	}
 	if err := params.Take(); err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if !in.IsString() {
-		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("%s is not a string", in.String())))
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a string", in.String())))
 	}
 	varsJson, err := tfvars_parser.Bytes([]byte(in.String()), "", tfvars_parser.Options{Simplify: true})
 	if err != nil {
@@ -788,10 +788,10 @@ func filterSha1(_ *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.V
 		return in
 	}
 	if err := params.Take(); err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if !in.IsString() {
-		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("%s is not a string", in.String())))
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a string", in.String())))
 	}
 	return exec.AsValue(fmt.Sprintf("%x", sha1.Sum([]byte(in.String()))))
 }
@@ -801,10 +801,10 @@ func filterSha256(_ *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 		return in
 	}
 	if err := params.Take(); err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if !in.IsString() {
-		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("%s is not a string", in.String())))
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a string", in.String())))
 	}
 	return exec.AsValue(fmt.Sprintf("%x", sha256.Sum256([]byte(in.String()))))
 }
@@ -813,10 +813,10 @@ func filterSha512(_ *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 		return in
 	}
 	if err := params.Take(); err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if !in.IsString() {
-		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("%s is not a string", in.String())))
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a string", in.String())))
 	}
 	return exec.AsValue(fmt.Sprintf("%x", sha512.Sum512([]byte(in.String()))))
 }
@@ -826,10 +826,10 @@ func filterMd5(_ *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Va
 		return in
 	}
 	if err := params.Take(); err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if !in.IsString() {
-		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("%s is not a string", in.String())))
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a string", in.String())))
 	}
 	return exec.AsValue(fmt.Sprintf("%x", md5.Sum([]byte(in.String()))))
 }

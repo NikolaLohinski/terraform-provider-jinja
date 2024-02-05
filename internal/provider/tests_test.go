@@ -84,7 +84,7 @@ var _ = Context("tests", func() {
 			BeforeEach(func() {
 				*context = `input = true`
 			})
-			itShouldFailToRender(terraformCode, "test 'empty' can only be called for list, dict or string")
+			itShouldFailToRender(terraformCode, "invalid call to test 'empty': True is neither a list, a dict nor a string")
 		})
 	})
 })

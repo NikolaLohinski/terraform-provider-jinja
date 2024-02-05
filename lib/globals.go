@@ -41,7 +41,7 @@ func absPathGlobal(e *exec.Evaluator, params *exec.VarArgs) *exec.Value {
 	if err := params.Take(
 		exec.KeywordArgument("path", nil, exec.StringArgument(&path)),
 	); err != nil {
-		return exec.AsValue(fmt.Errorf("wrong signature for function 'abspath': %s", err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 
 	resolved, err := e.Loader.Resolve(path)
@@ -59,7 +59,7 @@ func absPathGlobal(e *exec.Evaluator, params *exec.VarArgs) *exec.Value {
 
 func uuidGlobal(e *exec.Evaluator, params *exec.VarArgs) *exec.Value {
 	if err := params.Take(); err != nil {
-		return exec.AsValue(fmt.Errorf("wrong signature for function 'uuid': %s", err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	return exec.AsValue(uuid.New().String())
 }

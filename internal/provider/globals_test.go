@@ -52,7 +52,7 @@ var _ = Context("globals", func() {
 			BeforeEach(func() {
 				*template = `{{- abspath(true) -}}`
 			})
-			itShouldFailToRender(terraformCode, "wrong signature for function 'abspath'")
+			itShouldFailToRender(terraformCode, "invalid call to function 'abspath': failed to validate argument 'path': True is not a string")
 		})
 	})
 	Context("uuid", func() {
@@ -80,7 +80,7 @@ var _ = Context("globals", func() {
 			BeforeEach(func() {
 				*template = `{{- uuid(true) -}}`
 			})
-			itShouldFailToRender(terraformCode, "wrong signature for function 'uuid'")
+			itShouldFailToRender(terraformCode, "invalid call to function 'uuid': received 1 unexpected positional argument")
 		})
 	})
 })
