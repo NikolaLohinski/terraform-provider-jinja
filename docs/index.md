@@ -1126,6 +1126,20 @@ will render as:
 True
 ```
 
+### The `merge` filter
+
+Use this filter to deeply merge two dictionaries together. In case of duplicate keys, the value from the pipeline dictionary take precedence unless `override` is set to `True`.
+
+```
+{{ {'fizz': 'buzz', 'foo': 'bar'} | merge({'foo': 'test'}, override=True) }}
+```
+
+will return:
+
+```
+{'fizz': 'buzz', 'foo': 'test'}
+```
+
 ### The `sha1`, `sha256`, `sha512` and `md5` filters
 
 Classic hashing algorithms that work on strings as depicted in:

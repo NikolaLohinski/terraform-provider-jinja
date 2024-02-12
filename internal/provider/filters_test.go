@@ -1000,4 +1000,39 @@ var _ = Context("filters", func() {
 			itShouldFailToRender(terraformCode, "thrown")
 		})
 	})
+	Context("merge", func() {
+		BeforeEach(func() {
+			*template = heredoc.Doc(`
+				{{- {"foo": "bar", "still": "untouched"} | merge({"foo": "fizz", "buzz": "bar"}) -}}
+			`)
+		})
+		itShouldSetTheExpectedResult(terraformCode, "{'buzz': 'bar', 'foo': 'bar', 'still': 'untouched'}")
+		Context("when merging with overrides", func() {
+			BeforeEach(func() {
+				*template = heredoc.Doc(`
+					{{- {"foo": "bar", "still": "untouched"} | merge({"foo": "fizz", "buzz": "bar"}, override=True) -}}
+				`)
+			})
+			itShouldSetTheExpectedResult(terraformCode, "{'buzz': 'bar', 'foo': 'fizz', 'still': 'untouched'}")
+		})
+		Context("when the input is not a dict", func() {
+			BeforeEach(func() {
+				*template = `{{- [] | merge({}) -}}`
+			})
+			itShouldFailToRender(terraformCode, "\\[\\] is not a dict")
+		})
+		Context("when the argument is not a dict", func() {
+			BeforeEach(func() {
+				*template = `{{- {} | merge(True) -}}`
+			})
+			itShouldFailToRender(terraformCode, "True is not a dict")
+		})
+		Context("when the input is an error", func() {
+			BeforeEach(func() {
+				*template = `{{- "thrown" | fail | merge({}) -}}`
+			})
+			itShouldFailToRender(terraformCode, "thrown")
+		})
+	})
+
 })

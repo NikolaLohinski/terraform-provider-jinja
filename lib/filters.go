@@ -17,6 +17,7 @@ import (
 	"regexp"
 	"strings"
 
+	"dario.cat/mergo"
 	"github.com/dustin/go-humanize"
 	json "github.com/json-iterator/go"
 	tfvars_parser "github.com/musukvl/tfvars-parser"
@@ -54,18 +55,18 @@ var Filters = exec.FilterSet{
 	"insert":     filterInsert,
 	"keys":       filterKeys,
 	"match":      filterMatch,
-	// "merge": filterMerge, 	// TODO: implement something like merge/mergeOverwrite https://masterminds.github.io/sprig/dicts.html
-	"sha1":     filterSha1,
-	"sha256":   filterSha256,
-	"sha512":   filterSha512,
-	"md5":      filterMd5,
-	"split":    filterSplit,
-	"totoml":   filterToToml,
-	"toyaml":   filterToYAML,
-	"tobase64": filterToBase64,
-	"try":      filterTry,
-	"unset":    filterUnset,
-	"values":   filterValues,
+	"merge":      filterMerge,
+	"sha1":       filterSha1,
+	"sha256":     filterSha256,
+	"sha512":     filterSha512,
+	"md5":        filterMd5,
+	"split":      filterSplit,
+	"totoml":     filterToToml,
+	"toyaml":     filterToYAML,
+	"tobase64":   filterToBase64,
+	"try":        filterTry,
+	"unset":      filterUnset,
+	"values":     filterValues,
 }
 
 func filterBool(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
@@ -832,4 +833,49 @@ func filterMd5(_ *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Va
 		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a string", in.String())))
 	}
 	return exec.AsValue(fmt.Sprintf("%x", md5.Sum([]byte(in.String()))))
+}
+
+func filterMerge(_ *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	if in.IsError() {
+		return in
+	}
+	var (
+		override bool
+		with     interface{}
+	)
+	if err := params.Take(
+		exec.PositionalArgument("with", nil, exec.AnyArgument(&with)),
+		exec.KeywordArgument("override", exec.AsValue(false), exec.BoolArgument(&override)),
+	); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
+	}
+	if !in.IsDict() {
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a dict", in.String())))
+	}
+	withValue := exec.AsValue(with)
+	if !withValue.IsDict() {
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a dict", withValue.String())))
+	}
+	inputSimpleType := in.ToGoSimpleType(false)
+	withSimpleType := withValue.ToGoSimpleType(false)
+
+	modifiers := []func(*mergo.Config){}
+
+	if override {
+		modifiers = append(modifiers, mergo.WithOverride)
+	}
+	inputMap, ok := inputSimpleType.(map[string]interface{})
+	if !ok {
+		return exec.AsValue(fmt.Errorf("input is not a map: %#v", inputSimpleType))
+	}
+	withMap, ok := withSimpleType.(map[string]interface{})
+	if !ok {
+		return exec.AsValue(fmt.Errorf("with param is not a map: %#v", withSimpleType))
+	}
+
+	if err := mergo.Merge(&inputMap, withMap, modifiers...); err != nil {
+		return exec.AsValue(fmt.Errorf("failed to merge dicts: %s", err))
+	}
+
+	return exec.AsValue(inputSimpleType)
 }
