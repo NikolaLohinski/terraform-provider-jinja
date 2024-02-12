@@ -61,9 +61,21 @@ The `abspath` function takes a `path` string containing a filesystem path and co
 {{ "{{" }} abspath('./path/to/file') {{ "}}" }}
 ```
 
+### The `basename` function
+
+The `basename` function takes a string containing a filesystem path and returns the last portion from it.
+
+```
+{{ "{{" }} dirname("path/to/folder/file.txt") {{ "}}" }}
+```
+Will render into:
+```
+file.txt
+```
+
 ### The `dirname` function
 
-The `dirname` filter takes a string containing a filesystem path and removes the last portion from it.
+The `dirname` function takes a string containing a filesystem path and removes the last portion from it.
 
 ```
 {{ "{{" }} dirname("path/to/folder/file.txt") {{ "}}" }}

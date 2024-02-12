@@ -170,4 +170,16 @@ var _ = Context("globals", func() {
 			itShouldFailToRender(terraformCode, "True is not a string")
 		})
 	})
+	Context("basename", func() {
+		BeforeEach(func() {
+			*template = `{{- basename("test/folder/base") -}}`
+		})
+		itShouldSetTheExpectedResult(terraformCode, `base`)
+		Context("when the input is not a string", func() {
+			BeforeEach(func() {
+				*template = `{{- basename(True) -}}`
+			})
+			itShouldFailToRender(terraformCode, "True is not a string")
+		})
+	})
 })
