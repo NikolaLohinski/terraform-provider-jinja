@@ -29,7 +29,7 @@ var Globals = exec.NewContext(map[string]interface{}{
 	"abspath": absPathGlobal,
 	"uuid":    uuidGlobal,
 	"env":     envGlobal,
-	// "file": func(e *exec.Evaluator, arguments *exec.VarArgs) *exec.Value { return nil }, // TODO: define a global file function similar to the file filter
+	"file":    fileGlobal,
 	// "fileset": func(e *exec.Evaluator, arguments *exec.VarArgs) *exec.Value { return nil }, // TODO: define a global fileset function similar to the fileset filter
 	// "dirname": func(e *exec.Evaluator, arguments *exec.VarArgs) *exec.Value { return nil }, // TODO: define a global dirname function similar to the dirname filter
 	// "basename": func(e *exec.Evaluator, arguments *exec.VarArgs) *exec.Value { return nil }, // TODO: define a global basename function similar to the basename filter
@@ -86,4 +86,33 @@ func envGlobal(e *exec.Evaluator, params *exec.VarArgs) *exec.Value {
 	}
 
 	return exec.AsValue(value)
+}
+
+func fileGlobal(e *exec.Evaluator, params *exec.VarArgs) *exec.Value {
+	var (
+		path string
+	)
+	if err := params.Take(
+		exec.KeywordArgument("path", nil, exec.StringArgument(&path)),
+	); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
+	}
+
+	if !filepath.IsAbs(path) {
+		base, err := e.Loader.Resolve(".")
+		if err != nil {
+			return exec.AsValue(fmt.Errorf("failed to get current path with loader: %s", err))
+		}
+		path, err = filepath.Abs(filepath.Join(base, path))
+		if err != nil {
+			return exec.AsValue(fmt.Errorf("failed to resolve path %s with loader: %s", path, err))
+		}
+	}
+
+	out, err := os.ReadFile(path)
+	if err != nil {
+		return exec.AsValue(fmt.Errorf("failed to read file at path %s: %s", path, err))
+	}
+
+	return exec.AsValue(string(out))
 }

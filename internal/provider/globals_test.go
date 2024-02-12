@@ -112,4 +112,27 @@ var _ = Context("globals", func() {
 			})
 		})
 	})
+	Context("file", Ordered, func() {
+		BeforeAll(func() {
+			*directory = os.TempDir()
+
+			Must(os.MkdirAll(path.Join(*directory, "file"), 0700))
+
+			f := MustReturn(os.Create(path.Join(*directory, "file", "file.txt")))
+			f.WriteString("test")
+			Must(f.Close())
+
+			*template = `{{- file("./file/file.txt") -}}`
+		})
+		AfterAll(func() {
+			os.RemoveAll(*directory)
+		})
+		itShouldSetTheExpectedResult(terraformCode, "test")
+		Context("when the input is not a string", func() {
+			BeforeEach(func() {
+				*template = `{{- file(true) -}}`
+			})
+			itShouldFailToRender(terraformCode, "invalid call to function 'file': failed to validate argument 'path': True is not a string")
+		})
+	})
 })

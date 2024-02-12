@@ -431,6 +431,13 @@ The `env` function retrieves a environment variable. It will fail if the environ
 ```
 {{ env("USER", default="root") }}
 ```
+### The `file` function
+
+The `file` function is meant to load a local file. It works with both absolute and relative (to the place it's called from) paths. The `file` function does not process the file as a template but simply loads the contents of it.
+
+```
+{{ file("some/path") }}
+```
 
 
 ## Filters
