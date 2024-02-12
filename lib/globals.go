@@ -32,7 +32,7 @@ var Globals = exec.NewContext(map[string]interface{}{
 	"env":     envGlobal,
 	"file":    fileGlobal,
 	"fileset": fileSetGlobal,
-	// "dirname": func(e *exec.Evaluator, arguments *exec.VarArgs) *exec.Value { return nil }, // TODO: define a global dirname function similar to the dirname filter
+	"dirname": dirnameGlobal,
 	// "basename": func(e *exec.Evaluator, arguments *exec.VarArgs) *exec.Value { return nil }, // TODO: define a global basename function similar to the basename filter
 })
 
@@ -136,4 +136,16 @@ func fileSetGlobal(e *exec.Evaluator, params *exec.VarArgs) *exec.Value {
 		return exec.AsValue(fmt.Errorf("failed to traverse %s: %s", path, err))
 	}
 	return exec.AsValue(out)
+}
+
+func dirnameGlobal(e *exec.Evaluator, params *exec.VarArgs) *exec.Value {
+	var (
+		path string
+	)
+	if err := params.Take(
+		exec.PositionalArgument("path", nil, exec.StringArgument(&path)),
+	); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
+	}
+	return exec.AsValue(filepath.Dir(path))
 }
