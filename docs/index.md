@@ -956,6 +956,18 @@ Will render into:
 [1, 2, 3]
 ```
 
+### The `dirname` filter
+
+The `dirname` filter takes a string containing a filesystem path and removes the last portion from it.
+
+```
+{{ "path/to/folder/file.txt" | dirname }}
+```
+Will render into:
+```
+path/to/folder
+```
+
 ### The `env` filter
 
 The `env` filter retrieves a environment variable. It will fail if the environment variable is not found but take an additional `default` keyword parameter to set a default value as a fallback.
