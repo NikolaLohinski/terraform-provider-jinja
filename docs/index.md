@@ -439,6 +439,17 @@ The `file` function is meant to load a local file. It works with both absolute a
 {{ file("some/path") }}
 ```
 
+### The `fileset` function
+
+The `fileset` function is an operator to explore filesystem trees. It supports glob patterns (using `*`) and double glob patterns (using `**`) in paths, and operates relatively to the
+folder that contains the file it is called from.
+
+```
+{% for path in fileset("folder/*") %}
+{% path %}
+{% endfor %}
+```
+
 
 ## Filters
 

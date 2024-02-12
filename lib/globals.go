@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/nikolalohinski/gonja/v2/exec"
+	"github.com/yargevad/filepathx"
 )
 
 // The following constants are replaced at build time
@@ -30,7 +31,7 @@ var Globals = exec.NewContext(map[string]interface{}{
 	"uuid":    uuidGlobal,
 	"env":     envGlobal,
 	"file":    fileGlobal,
-	// "fileset": func(e *exec.Evaluator, arguments *exec.VarArgs) *exec.Value { return nil }, // TODO: define a global fileset function similar to the fileset filter
+	"fileset": fileSetGlobal,
 	// "dirname": func(e *exec.Evaluator, arguments *exec.VarArgs) *exec.Value { return nil }, // TODO: define a global dirname function similar to the dirname filter
 	// "basename": func(e *exec.Evaluator, arguments *exec.VarArgs) *exec.Value { return nil }, // TODO: define a global basename function similar to the basename filter
 })
@@ -115,4 +116,24 @@ func fileGlobal(e *exec.Evaluator, params *exec.VarArgs) *exec.Value {
 	}
 
 	return exec.AsValue(string(out))
+}
+
+func fileSetGlobal(e *exec.Evaluator, params *exec.VarArgs) *exec.Value {
+	var (
+		path string
+	)
+	if err := params.Take(
+		exec.PositionalArgument("path", nil, exec.StringArgument(&path)),
+	); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
+	}
+	base, err := e.Loader.Resolve(".")
+	if err != nil {
+		return exec.AsValue(fmt.Errorf("failed to resolve path %s with loader: %s", path, err))
+	}
+	out, err := filepathx.Glob(filepath.Join(base, path))
+	if err != nil {
+		return exec.AsValue(fmt.Errorf("failed to traverse %s: %s", path, err))
+	}
+	return exec.AsValue(out)
 }

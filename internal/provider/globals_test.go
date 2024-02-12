@@ -1,6 +1,7 @@
 package provider_test
 
 import (
+	"fmt"
 	"os"
 	"path"
 
@@ -133,6 +134,28 @@ var _ = Context("globals", func() {
 				*template = `{{- file(true) -}}`
 			})
 			itShouldFailToRender(terraformCode, "invalid call to function 'file': failed to validate argument 'path': True is not a string")
+		})
+	})
+	Context("fileset", Ordered, func() {
+		BeforeAll(func() {
+			*directory = os.TempDir()
+
+			Must(os.MkdirAll(path.Join(*directory, "fileset", "folder"), 0700))
+
+			MustReturn(os.Create(path.Join(*directory, "fileset", "root.txt"))).Close()
+			MustReturn(os.Create(path.Join(*directory, "fileset", "folder", "nested.txt"))).Close()
+
+			*template = `{{- fileset("./fileset/**/*.txt") -}}`
+		})
+		AfterAll(func() {
+			os.RemoveAll(*directory)
+		})
+		itShouldSetTheExpectedResult(terraformCode, fmt.Sprintf("['%s', '%s']", os.TempDir()+"/fileset/root.txt", os.TempDir()+"/fileset/folder/nested.txt"))
+		Context("when the input is not a string", func() {
+			BeforeEach(func() {
+				*template = `{{- fileset(True) -}}`
+			})
+			itShouldFailToRender(terraformCode, "True is not a string")
 		})
 	})
 })
