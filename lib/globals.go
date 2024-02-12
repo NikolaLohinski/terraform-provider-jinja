@@ -2,6 +2,7 @@ package lib
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/google/uuid"
@@ -27,11 +28,11 @@ var Globals = exec.NewContext(map[string]interface{}{
 	},
 	"abspath": absPathGlobal,
 	"uuid":    uuidGlobal,
+	"env":     envGlobal,
 	// "file": func(e *exec.Evaluator, arguments *exec.VarArgs) *exec.Value { return nil }, // TODO: define a global file function similar to the file filter
 	// "fileset": func(e *exec.Evaluator, arguments *exec.VarArgs) *exec.Value { return nil }, // TODO: define a global fileset function similar to the fileset filter
 	// "dirname": func(e *exec.Evaluator, arguments *exec.VarArgs) *exec.Value { return nil }, // TODO: define a global dirname function similar to the dirname filter
 	// "basename": func(e *exec.Evaluator, arguments *exec.VarArgs) *exec.Value { return nil }, // TODO: define a global basename function similar to the basename filter
-	// "env": func(e *exec.Evaluator, arguments *exec.VarArgs) *exec.Value { return nil }, // TODO: define a global env function similar to the env filter // TODO: implement https://terragrunt.gruntwork.io/docs/reference/built-in-functions/#get_env
 })
 
 func absPathGlobal(e *exec.Evaluator, params *exec.VarArgs) *exec.Value {
@@ -62,4 +63,27 @@ func uuidGlobal(e *exec.Evaluator, params *exec.VarArgs) *exec.Value {
 		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	return exec.AsValue(uuid.New().String())
+}
+
+func envGlobal(e *exec.Evaluator, params *exec.VarArgs) *exec.Value {
+	var (
+		name         string
+		defaultValue string
+	)
+	if err := params.Take(
+		exec.KeywordArgument("name", nil, exec.StringArgument(&name)),
+		exec.KeywordArgument("default", exec.AsValue(""), exec.StringArgument(&defaultValue)),
+	); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
+	}
+
+	value, ok := os.LookupEnv(name)
+	if !ok {
+		if defaultValue == "" {
+			return exec.AsValue(fmt.Errorf("failed to get '%s' environment variable without default", name))
+		}
+		value = defaultValue
+	}
+
+	return exec.AsValue(value)
 }

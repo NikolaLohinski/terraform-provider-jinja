@@ -83,4 +83,33 @@ var _ = Context("globals", func() {
 			itShouldFailToRender(terraformCode, "invalid call to function 'uuid': received 1 unexpected positional argument")
 		})
 	})
+	Context("env", func() {
+		BeforeEach(func() {
+			Must(os.Setenv("FOO", "bar"))
+
+			*template = `{{- env("FOO") -}}`
+		})
+		AfterEach(func() {
+			Must(os.Unsetenv("FOO"))
+		})
+		itShouldSetTheExpectedResult(terraformCode, "bar")
+		Context("when the input is not a string", func() {
+			BeforeEach(func() {
+				*template = `{{- env(true) -}}`
+			})
+			itShouldFailToRender(terraformCode, "invalid call to function 'env': failed to validate argument 'name': True is not a string")
+		})
+		Context("when the variable does not exist", func() {
+			BeforeEach(func() {
+				*template = `{{- env("BAR") -}}`
+			})
+			itShouldFailToRender(terraformCode, "failed to get 'BAR' environment variable without default")
+			Context("and a default is provided", func() {
+				BeforeEach(func() {
+					*template = `{{- env("BAR", "foo") -}}`
+				})
+				itShouldSetTheExpectedResult(terraformCode, "foo")
+			})
+		})
+	})
 })

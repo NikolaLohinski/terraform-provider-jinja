@@ -424,6 +424,14 @@ The `uuid` function generates a UUID based on [RFC 4122](https://datatracker.iet
 {{ uuid() }}
 ```
 
+### The `env` function
+
+The `env` function retrieves a environment variable. It will fail if the environment variable is not found but take an additional `default` keyword parameter to set a default value as a fallback.
+
+```
+{{ env("USER", default="root") }}
+```
+
 
 ## Filters
 
