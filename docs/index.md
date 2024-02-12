@@ -968,6 +968,18 @@ Will render into:
 [1, 2, 3]
 ```
 
+### The `basename` filter
+
+The `basename` filter takes a string containing a filesystem path and returns the last portion from it.
+
+```
+{{ "path/to/folder/file.txt" | basename }}
+```
+Will render into:
+```
+file.txt
+```
+
 ### The `dirname` filter
 
 The `dirname` filter takes a string containing a filesystem path and removes the last portion from it.
