@@ -3,6 +3,7 @@ package lib
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -158,7 +159,12 @@ func parseTemplate(ctx *Context) (*exec.Template, error) {
 		return nil, fmt.Errorf("failed to create a file system loader: %v", err)
 	}
 
-	rootID := fmt.Sprintf("root-%s", string(sha256.New().Sum([]byte(ctx.Source.Template))))
+	sha := sha256.New()
+	if _, err := sha.Write([]byte(ctx.Source.Template)); err != nil {
+		return nil, fmt.Errorf("failed to compute sha256 from root template")
+	}
+	rootID := fmt.Sprintf("root-%s", hex.EncodeToString(sha.Sum(nil)))
+
 	shiftedLoader, err := loaders.NewShiftedLoader(rootID, bytes.NewBufferString(ctx.Source.Template), fileSystemLoader)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a shifted loader: %v", err)

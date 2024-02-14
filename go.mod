@@ -15,7 +15,7 @@ require (
 	github.com/hexops/gotextdiff v1.0.3
 	github.com/json-iterator/go v1.1.12
 	github.com/musukvl/tfvars-parser v0.0.0-20230214134007-bfb82934219e
-	github.com/nikolalohinski/gonja/v2 v2.1.4
+	github.com/nikolalohinski/gonja/v2 v2.1.5
 	github.com/onsi/ginkgo/v2 v2.11.0
 	github.com/onsi/gomega v1.27.8
 	github.com/openconfig/goyang v1.4.5

@@ -53,6 +53,26 @@ var _ = Context("data \"jinja_template\" \"test\" { ... }", func() {
 			})
 			itShouldSetTheExpectedResult(terraformCode, includedContent)
 		})
+		Context("when the include is relative and nested", func() {
+			BeforeEach(func() {
+				directory := os.TempDir()
+
+				Must(os.MkdirAll(path.Join(directory, "nested"), os.ModePerm))
+
+				file = MustReturn(os.CreateTemp(path.Join(directory, "nested"), ""))
+				_ = MustReturn(file.WriteString(includedContent))
+
+				*terraformCode = heredoc.Doc(`
+					data "jinja_template" "test" {
+						source {
+							template  = "{% include './nested/` + path.Base(file.Name()) + `' %}"
+							directory = "` + directory + `"
+						}
+					}
+				`)
+			})
+			itShouldSetTheExpectedResult(terraformCode, includedContent)
+		})
 		Context("when the include is absolute", func() {
 			BeforeEach(func() {
 				file = MustReturn(os.CreateTemp("", ""))
