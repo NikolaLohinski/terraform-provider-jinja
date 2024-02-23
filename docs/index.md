@@ -82,6 +82,7 @@ A dictionary containing information about the `provider` with the following prop
 * `registry` - the URL of the registry the provider is published to
 
 
+
 ## Control Structures
 
 This section describes the syntax and semantics of the template engine and will be most useful as reference to those creating Jinja templates. A _control structure_  (or _statement_) is a special keyword that can be used through blocks in order to achieve conditional logic in a template.
@@ -473,6 +474,7 @@ folder that contains the file it is called from.
 {% path %}
 {% endfor %}
 ```
+
 
 
 ## Filters
@@ -1316,6 +1318,7 @@ Will render into:
 ```
 
 
+
 ## Tests
 
 A test can be used in blocks and/or expressions to trigger conditional behavior, for example:
@@ -1465,6 +1468,7 @@ Classic type casting tests.
 
 ### The `empty` test
 Check if the input is empty. Works on strings, lists and dictionaries.
+
 
 
 ## Methods
