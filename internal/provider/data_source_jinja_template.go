@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -242,7 +243,15 @@ func (t *TemplateDataSource) Read(ctx context.Context, req datasource.ReadReques
 		return
 	}
 	data.Result = types.StringValue(string(result))
-	data.ID = types.StringValue(string(sha256.New().Sum(result)))
+	signature := sha256.New()
+	if _, err := signature.Write(result); err != nil {
+		resp.Diagnostics.AddError(
+			"Failed to compute ID from result",
+			fmt.Sprintf("trying to compute sha256 of the rendering result failed: %s", err.Error()),
+		)
+		return
+	}
+	data.ID = types.StringValue(hex.EncodeToString(signature.Sum(nil)))
 
 	merged_context, err := json.Marshal(values)
 	if err != nil {
