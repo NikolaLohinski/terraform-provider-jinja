@@ -87,4 +87,40 @@ var _ = Context("tests", func() {
 			itShouldFailToRender(terraformCode, "invalid call to test 'empty': True is neither a list, a dict nor a string")
 		})
 	})
+	Context("match", func() {
+		BeforeEach(func() {
+			*template = `{{- input is match("^f(o)+$") -}}`
+		})
+		Context("when the input is a string that matches", func() {
+			BeforeEach(func() {
+				*context = `input = "foo"`
+			})
+			itShouldSetTheExpectedResult(terraformCode, "True")
+		})
+		Context("when the input is a string that does not matches", func() {
+			BeforeEach(func() {
+				*context = `input = "bar"`
+			})
+			itShouldSetTheExpectedResult(terraformCode, "False")
+		})
+		Context("when the argument is not a valid regex", func() {
+			BeforeEach(func() {
+				*context = `input = "foo"`
+				*template = `{{- input is match("{.*[") -}}`
+			})
+			itShouldFailToRender(terraformCode, "failed to compile: {.*\\[: error parsing regexp")
+		})
+		Context("when the input is an error", func() {
+			BeforeEach(func() {
+				*template = `{{- ("thrown" | fail) is match(".*") -}}`
+			})
+			itShouldFailToRender(terraformCode, "thrown")
+		})
+		Context("when the input is invalid", func() {
+			BeforeEach(func() {
+				*context = `input = true`
+			})
+			itShouldFailToRender(terraformCode, "True is not a string")
+		})
+	})
 })
