@@ -197,6 +197,10 @@ github.com/musukvl/tfvars-parser v0.0.0-20230214134007-bfb82934219e h1:IAIN+gYFR
 github.com/musukvl/tfvars-parser v0.0.0-20230214134007-bfb82934219e/go.mod h1:dy1fq7zSepRmOf7NVlImI+flWDDEImniABmUFJVApoQ=
 github.com/nikolalohinski/gonja/v2 v2.1.6 h1:p19SUunPMcvpvcVIM79a4j4SINacR0+7Zm//e/F38h8=
 github.com/nikolalohinski/gonja/v2 v2.1.6/go.mod h1:l9DuWJvT/BddBr2SsmEimESD6msSqRw7u5HzI2Um+sc=
+github.com/nikolalohinski/gonja/v2 v2.1.7 h1:5GshKxy8NUWCym/uTbcY3zPrrrjap/z8yj/XSYatAxo=
+github.com/nikolalohinski/gonja/v2 v2.1.7/go.mod h1:l9DuWJvT/BddBr2SsmEimESD6msSqRw7u5HzI2Um+sc=
+github.com/nikolalohinski/gonja/v2 v2.1.8 h1:WgjCncqvoID2M7HRH0bA2yK4Hx703WLvN2VnFS4cnU0=
+github.com/nikolalohinski/gonja/v2 v2.1.8/go.mod h1:l9DuWJvT/BddBr2SsmEimESD6msSqRw7u5HzI2Um+sc=
 github.com/oklog/run v1.1.0 h1:GEenZ1cK0+q0+wsJew9qUg/DyD8k3JzYsZAi5gYi2mA=
 github.com/oklog/run v1.1.0/go.mod h1:sVPdnTZT1zYwAJeCMu2Th4T21pA3FPOQRfWjQlk7DVU=
 github.com/onsi/ginkgo/v2 v2.11.0 h1:WgqUCUt/lT6yXoQ8Wef0fsNn5cAuMK7+KT9UFRz2tcU=
