@@ -3,14 +3,14 @@ package lib
 import (
 	"errors"
 	"fmt"
+	"regexp"
 
 	"github.com/nikolalohinski/gonja/v2/exec"
 )
 
-var Tests = exec.TestSet{
+var Tests = exec.NewTestSet(map[string]exec.TestFunction{
 	"empty": testEmpty,
-	// "match": testMatching, // TODO: implement test behaving similarly to the match filter
-}
+})
 
 func testEmpty(ctx *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
 	if in.IsError() {

@@ -29,7 +29,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var Filters = exec.FilterSet{
+var Filters = exec.NewFilterSet(map[string]exec.FilterFunction{
 	"abspath":    filterAbsPath,
 	"add":        filterAdd,
 	"append":     filterAppend,
@@ -67,7 +67,7 @@ var Filters = exec.FilterSet{
 	"try":        filterTry,
 	"unset":      filterUnset,
 	"values":     filterValues,
-}
+})
 
 func filterBool(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
 	if in.IsError() {
