@@ -925,4 +925,28 @@ var _ = Context("data \"jinja_template\" \"test\" { ... }", func() {
 		})
 		itShouldFailToRender(terraformCode, `.*At least one of these attributes must be configured: \[source,template\]`)
 	})
+
+	Context("when using the `block` control structure", func() {
+		BeforeEach(func() {
+			*terraformCode = heredoc.Doc(`
+				data "jinja_template" "test" {
+					source {
+						template  = <<-EOF
+							{% block something -%}
+							block content
+							{%- endblock something %}
+							{{ self.something() }}
+							{{ self.something() }}
+						EOF
+						directory = path.module
+					}
+				}
+			`)
+		})
+		itShouldSetTheExpectedResult(terraformCode, heredoc.Doc(`
+			block content
+			block content
+			block content
+		`))
+	})
 })
