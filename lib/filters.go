@@ -129,9 +129,9 @@ func filterIfElse(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if in.IsTrue() {
-		return exec.ToValue(ifValue)
+		return exec.AsValue(ifValue)
 	} else {
-		return exec.ToValue(elseValue)
+		return exec.AsValue(elseValue)
 	}
 }
 

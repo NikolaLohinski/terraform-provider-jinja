@@ -490,7 +490,7 @@ var _ = Context("filters", func() {
 	})
 	Context("ifelse", func() {
 		BeforeEach(func() {
-			*template = `{{- name in "foo bar" | ifelse("name is in 'foo bar'", "name is not in 'foo bar'") -}}`
+			*template = `{{- (name in "foo bar") | ifelse("name is in 'foo bar'", "name is not in 'foo bar'") -}}`
 		})
 		Context("first branch", func() {
 			BeforeEach(func() {
