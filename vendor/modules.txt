@@ -297,12 +297,17 @@ github.com/modern-go/reflect2
 # github.com/musukvl/tfvars-parser v0.0.0-20230214134007-bfb82934219e
 ## explicit; go 1.19
 github.com/musukvl/tfvars-parser
-# github.com/nikolalohinski/gonja/v2 v2.2.2
+# github.com/nikolalohinski/gonja/v2 v2.3.0
 ## explicit; go 1.20
 github.com/nikolalohinski/gonja/v2
 github.com/nikolalohinski/gonja/v2/builtins
 github.com/nikolalohinski/gonja/v2/builtins/control_structures
 github.com/nikolalohinski/gonja/v2/builtins/methods
+github.com/nikolalohinski/gonja/v2/builtins/methods/pybool
+github.com/nikolalohinski/gonja/v2/builtins/methods/pyerrors
+github.com/nikolalohinski/gonja/v2/builtins/methods/pyfloat
+github.com/nikolalohinski/gonja/v2/builtins/methods/pyint
+github.com/nikolalohinski/gonja/v2/builtins/methods/pystring
 github.com/nikolalohinski/gonja/v2/config
 github.com/nikolalohinski/gonja/v2/docs
 github.com/nikolalohinski/gonja/v2/exec
@@ -393,24 +398,25 @@ github.com/zclconf/go-cty/cty/function/stdlib
 github.com/zclconf/go-cty/cty/gocty
 github.com/zclconf/go-cty/cty/json
 github.com/zclconf/go-cty/cty/set
-# golang.org/x/crypto v0.16.0
+# golang.org/x/crypto v0.22.0
 ## explicit; go 1.18
 golang.org/x/crypto/argon2
 golang.org/x/crypto/blake2b
 golang.org/x/crypto/cast5
 golang.org/x/crypto/hkdf
 golang.org/x/crypto/sha3
-# golang.org/x/exp v0.0.0-20240103183307-be819d1f06fc
+# golang.org/x/exp v0.0.0-20240404231335-c0f41cb1a7a0
 ## explicit; go 1.20
 golang.org/x/exp/constraints
 golang.org/x/exp/slices
-# golang.org/x/mod v0.14.0
+golang.org/x/exp/utf8string
+# golang.org/x/mod v0.17.0
 ## explicit; go 1.18
 golang.org/x/mod/internal/lazyregexp
 golang.org/x/mod/modfile
 golang.org/x/mod/module
 golang.org/x/mod/semver
-# golang.org/x/net v0.19.0
+# golang.org/x/net v0.24.0
 ## explicit; go 1.18
 golang.org/x/net/context
 golang.org/x/net/html
@@ -422,13 +428,14 @@ golang.org/x/net/http2/hpack
 golang.org/x/net/idna
 golang.org/x/net/internal/timeseries
 golang.org/x/net/trace
-# golang.org/x/sys v0.15.0
+# golang.org/x/sys v0.19.0
 ## explicit; go 1.18
 golang.org/x/sys/cpu
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 # golang.org/x/text v0.14.0
 ## explicit; go 1.18
+golang.org/x/text/cases
 golang.org/x/text/encoding
 golang.org/x/text/encoding/charmap
 golang.org/x/text/encoding/htmlindex
@@ -439,6 +446,7 @@ golang.org/x/text/encoding/korean
 golang.org/x/text/encoding/simplifiedchinese
 golang.org/x/text/encoding/traditionalchinese
 golang.org/x/text/encoding/unicode
+golang.org/x/text/internal
 golang.org/x/text/internal/language
 golang.org/x/text/internal/language/compact
 golang.org/x/text/internal/tag
@@ -449,10 +457,9 @@ golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
-# golang.org/x/tools v0.16.0
-## explicit; go 1.18
+# golang.org/x/tools v0.20.0
+## explicit; go 1.19
 golang.org/x/tools/go/ast/inspector
-golang.org/x/tools/internal/typeparams
 # google.golang.org/appengine v1.6.8
 ## explicit; go 1.11
 google.golang.org/appengine
